@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GameEngine 2D - Basic Core Example</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background-color: #1a1a1a;
+        color: white;
+      }
+
+      canvas {
+        border: 2px solid #333;
+        background-color: #000;
+        display: block;
+        margin: 20px auto;
+      }
+
+      .controls {
+        text-align: center;
+        margin: 20px;
+      }
+
+      button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 8px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      button:disabled {
+        background-color: #666;
+        cursor: not-allowed;
+      }
+
+      .stats {
+        text-align: center;
+        margin: 20px;
+        font-family: monospace;
+      }
+
+      .info {
+        text-align: center;
+        margin: 20px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>GameEngine 2D - Basic Core Example</h1>
+
+    <div class="info">
+      <p>
+        This example demonstrates the basic core functionality of the GameEngine
+        2D:
+      </p>
+      <ul style="text-align: left">
+        <li>
+          <strong>Engine:</strong> Main engine initialization and lifecycle
+        </li>
+        <li>
+          <strong>GameLoop:</strong> Fixed timestep game loop with performance
+          tracking
+        </li>
+        <li>
+          <strong>EventSystem:</strong> Event-driven communication between
+          components
+        </li>
+        <li>
+          <strong>Scene:</strong> Scene management and entity organization
+        </li>
+        <li>
+          <strong>Math:</strong> Vector2, Transform, and MathUtils classes
+        </li>
+      </ul>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <div class="controls">
+      <button id="startBtn">Start Engine</button>
+      <button id="stopBtn" disabled>Stop Engine</button>
+      <button id="pauseBtn" disabled>Pause</button>
+      <button id="resumeBtn" disabled>Resume</button>
+      <button id="addEntityBtn" disabled>Add Test Entity</button>
+    </div>
+
+    <div class="stats">
+      <div>FPS: <span id="fps">0</span></div>
+      <div>Frame Time: <span id="frameTime">0</span>ms</div>
+      <div>Uptime: <span id="uptime">0</span>s</div>
+      <div>Total Frames: <span id="totalFrames">0</span></div>
+      <div>Active Scene: <span id="activeScene">None</span></div>
+      <div>Entities: <span id="entityCount">0</span></div>
+    </div>
+
+    <script type="module">
+      import {
+        GameEngine,
+        Scene,
+        Vector2,
+        Transform,
+        MathUtils,
+      } from "../../src/index.ts";
+
+      // Simple test entity class
+      class TestEntity {
+        constructor(id, position = new Vector2()) {
+          this.id = id;
+          this.active = true;
+          this.transform = new Transform(position);
+          this.velocity = new Vector2(
+            MathUtils.random(-50, 50),
+            MathUtils.random(-50, 50)
+          );
+          this.color = `hsl(${MathUtils.randomInt(0, 360)}, 70%, 50%)`;
+          this.size = MathUtils.random(5, 15);
+        }
+
+        update(deltaTime) {
+          // Simple physics - bounce off walls
+          this.transform.position.add(
+            Vector2.multiply(this.velocity, deltaTime)
+          );
+
+          if (
+            this.transform.position.x < 0 ||
+            this.transform.position.x > 800
+          ) {
+            this.velocity.x *= -1;
+          }
+          if (
+            this.transform.position.y < 0 ||
+            this.transform.position.y > 600
+          ) {
+            this.velocity.y *= -1;
+          }
+
+          // Keep in bounds
+          this.transform.position.x = MathUtils.clamp(
+            this.transform.position.x,
+            0,
+            800
+          );
+          this.transform.position.y = MathUtils.clamp(
+            this.transform.position.y,
+            0,
+            600
+          );
+        }
+
+        render(ctx) {
+          ctx.save();
+          ctx.translate(this.transform.position.x, this.transform.position.y);
+          ctx.rotate(this.transform.rotation);
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Simple test system
+      class TestSystem {
+        update(entities, deltaTime) {
+          entities.forEach((entity) => {
+            if (entity.update) {
+              entity.update(deltaTime);
+            }
+          });
+        }
+      }
+
+      // Simple renderer system
+      class RenderSystem {
+        constructor(canvas) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+        }
+
+        update(entities, deltaTime) {
+          // Clear canvas
+          this.ctx.fillStyle = "#000";
+          this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+          // Render entities
+          entities.forEach((entity) => {
+            if (entity.render) {
+              entity.render(this.ctx);
+            }
+          });
+        }
+      }
+
+      // Initialize engine
+      const engine = new GameEngine({
+        canvas: "#gameCanvas",
+        width: 800,
+        height: 600,
+        renderer: "canvas2d",
+      });
+
+      // Create systems
+      const testSystem = new TestSystem();
+      const renderSystem = new RenderSystem(engine.getCanvas());
+
+      // Create scene
+      const gameScene = new Scene("game");
+
+      // Add some test entities
+      function addTestEntity() {
+        const position = new Vector2(
+          MathUtils.random(50, 750),
+          MathUtils.random(50, 550)
+        );
+        const entity = new TestEntity(`entity_${Date.now()}`, position);
+        gameScene.addEntity(entity);
+      }
+
+      // DOM elements
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const resumeBtn = document.getElementById("resumeBtn");
+      const addEntityBtn = document.getElementById("addEntityBtn");
+
+      const fpsSpan = document.getElementById("fps");
+      const frameTimeSpan = document.getElementById("frameTime");
+      const uptimeSpan = document.getElementById("uptime");
+      const totalFramesSpan = document.getElementById("totalFrames");
+      const activeSceneSpan = document.getElementById("activeScene");
+      const entityCountSpan = document.getElementById("entityCount");
+
+      // Event listeners
+      startBtn.addEventListener("click", async () => {
+        try {
+          await engine.initialize();
+
+          engine.addSystem(testSystem);
+          engine.addSystem(renderSystem);
+          engine.addScene(gameScene);
+          engine.setActiveScene(gameScene);
+
+          // Add initial entities
+          for (let i = 0; i < 5; i++) {
+            addTestEntity();
+          }
+
+          engine.start();
+
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+          pauseBtn.disabled = false;
+          addEntityBtn.disabled = false;
+
+          console.log("Engine started successfully");
+        } catch (error) {
+          console.error("Failed to start engine:", error);
+          alert("Failed to start engine: " + error.message);
+        }
+      });
+
+      stopBtn.addEventListener("click", () => {
+        engine.stop();
+
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        pauseBtn.disabled = true;
+        resumeBtn.disabled = true;
+        addEntityBtn.disabled = true;
+      });
+
+      pauseBtn.addEventListener("click", () => {
+        engine.pause();
+        pauseBtn.disabled = true;
+        resumeBtn.disabled = false;
+      });
+
+      resumeBtn.addEventListener("click", () => {
+        engine.resume();
+        pauseBtn.disabled = false;
+        resumeBtn.disabled = true;
+      });
+
+      addEntityBtn.addEventListener("click", () => {
+        addTestEntity();
+      });
+
+      // Update stats
+      setInterval(() => {
+        if (engine.isRunning()) {
+          const stats = engine.getStats();
+          fpsSpan.textContent = Math.round(stats.fps);
+          frameTimeSpan.textContent = stats.averageFrameTime.toFixed(2);
+          uptimeSpan.textContent = stats.uptime.toFixed(1);
+          totalFramesSpan.textContent = stats.totalFrames;
+
+          const activeScene = engine.getActiveScene();
+          activeSceneSpan.textContent = activeScene ? activeScene.name : "None";
+          entityCountSpan.textContent = activeScene
+            ? activeScene.getEntityCount()
+            : 0;
+        }
+      }, 100);
+
+      // Listen to engine events
+      const eventSystem = engine.getEventSystem();
+
+      eventSystem.on("engine:started", () => {
+        console.log("🚀 Engine started event received");
+      });
+
+      eventSystem.on("engine:stopped", () => {
+        console.log("⏹️ Engine stopped event received");
+      });
+
+      eventSystem.on("gameloop:fpsUpdate", (event) => {
+        console.log(`📊 FPS Update: ${Math.round(event.data.fps)} fps`);
+      });
+
+      eventSystem.on("scene:entityAdded", (event) => {
+        console.log(`➕ Entity added: ${event.data.entityId}`);
+      });
+
+      console.log('Basic Core Example loaded. Click "Start Engine" to begin!');
+    </script>
+  </body>
+</html>
