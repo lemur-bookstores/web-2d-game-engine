@@ -1,0 +1,101 @@
+import { Texture } from './Texture';
+
+export interface SpriteFrame {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+export interface Animation {
+    name: string;
+    frames: number[];
+    duration: number;
+    loop: boolean;
+    pingPong: boolean;
+}
+
+export class SpriteSheet {
+    private texture: Texture;
+    private frames: SpriteFrame[] = [];
+    private animations: Map<string, Animation> = new Map();
+
+    constructor(texture: Texture, frameWidth: number, frameHeight: number) {
+        this.texture = texture;
+        this.generateFrames(frameWidth, frameHeight);
+    }
+
+    private generateFrames(frameWidth: number, frameHeight: number): void {
+        const cols = Math.floor(this.texture.width / frameWidth);
+        const rows = Math.floor(this.texture.height / frameHeight);
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                this.frames.push({
+                    x: col * frameWidth,
+                    y: row * frameHeight,
+                    width: frameWidth,
+                    height: frameHeight,
+                });
+            }
+        }
+    }
+
+    addAnimation(name: string, animation: Animation): void {
+        this.animations.set(name, animation);
+    }
+
+    getAnimation(name: string): Animation | undefined {
+        return this.animations.get(name);
+    }
+
+    getFrame(index: number): SpriteFrame | undefined {
+        return this.frames[index];
+    }
+
+    getFrameCount(): number {
+        return this.frames.length;
+    }
+
+    getTexture(): Texture {
+        return this.texture;
+    }
+
+    static fromAtlas(texture: Texture, atlasData: any): SpriteSheet {
+        // Creamos un SpriteSheet con dimensiones mínimas para inicializar
+        const spriteSheet = new SpriteSheet(texture, 1, 1);
+        spriteSheet.frames = []; // Limpiamos los frames generados por el constructor
+
+        // Cargamos los frames desde el atlas JSON
+        atlasData.frames.forEach((frameData: any) => {
+            spriteSheet.frames.push({
+                x: frameData.frame.x,
+                y: frameData.frame.y,
+                width: frameData.frame.w,
+                height: frameData.frame.h,
+            });
+        });
+
+        // Cargamos las animaciones si existen
+        if (atlasData.animations) {
+            Object.keys(atlasData.animations).forEach((animName) => {
+                const animData = atlasData.animations[animName];
+                spriteSheet.addAnimation(animName, {
+                    name: animName,
+                    frames: animData.frames,
+                    duration: animData.duration || 0.1,
+                    loop: animData.loop !== false,
+                    pingPong: animData.pingPong || false,
+                });
+            });
+        }
+
+        return spriteSheet;
+    }
+
+    dispose(): void {
+        this.texture.dispose();
+        this.frames = [];
+        this.animations.clear();
+    }
+}
