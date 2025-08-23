@@ -10,6 +10,7 @@ export interface EngineConfig {
     backgroundColor?: string;
     pixelRatio?: number;
     antialias?: boolean;
+    debug?: boolean;
 }
 
 export interface GameEvent {

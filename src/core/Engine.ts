@@ -14,6 +14,7 @@ export class Engine {
     private activeScene: Scene | null = null;
     private initialized = false;
     private config: EngineConfig;
+    private debugMode: boolean;
 
     // Engine stats
     private startTime: number = 0;
@@ -21,11 +22,16 @@ export class Engine {
 
     constructor(config: EngineConfig) {
         this.config = { ...config };
+        this.debugMode = config.debug ?? false;
         this.eventSystem = EventSystem.getInstance();
         this.gameLoop = new GameLoop();
 
         this.setupCanvas();
         this.setupEventListeners();
+
+        if (this.debugMode) {
+            this.debugLog('GameEngine 2D created in debug mode');
+        }
     }
 
     /**
@@ -49,7 +55,7 @@ export class Engine {
             this.initialized = true;
             this.eventSystem.emit('engine:initialized');
 
-            console.log('GameEngine 2D initialized successfully');
+            this.debugLog('GameEngine 2D initialized successfully');
         } catch (error) {
             this.eventSystem.emit('engine:initializationError', { error });
             throw error;
@@ -70,7 +76,7 @@ export class Engine {
         this.gameLoop.start();
         this.eventSystem.emit('engine:started');
 
-        console.log('GameEngine 2D started');
+        this.debugLog('GameEngine 2D started');
     }
 
     /**
@@ -80,7 +86,7 @@ export class Engine {
         this.gameLoop.stop();
         this.eventSystem.emit('engine:stopped');
 
-        console.log('GameEngine 2D stopped');
+        this.debugLog('GameEngine 2D stopped');
     }
 
     /**
@@ -89,6 +95,7 @@ export class Engine {
     pause(): void {
         this.gameLoop.pause();
         this.eventSystem.emit('engine:paused');
+        this.debugLog('GameEngine 2D paused');
     }
 
     /**
@@ -97,6 +104,7 @@ export class Engine {
     resume(): void {
         this.gameLoop.resume();
         this.eventSystem.emit('engine:resumed');
+        this.debugLog('GameEngine 2D resumed');
     }
 
     /**
@@ -105,6 +113,7 @@ export class Engine {
     addSystem(system: System): void {
         this.gameLoop.addSystem(system);
         this.eventSystem.emit('engine:systemAdded', { system });
+        this.debugLog('System added:', system.constructor.name);
     }
 
     /**
@@ -113,6 +122,7 @@ export class Engine {
     removeSystem(system: System): void {
         this.gameLoop.removeSystem(system);
         this.eventSystem.emit('engine:systemRemoved', { system });
+        this.debugLog('System removed:', system.constructor.name);
     }
 
     /**
@@ -127,6 +137,7 @@ export class Engine {
         scene.initialize();
 
         this.eventSystem.emit('engine:sceneAdded', { scene });
+        this.debugLog('Scene added:', scene.name);
     }
 
     /**
@@ -147,6 +158,7 @@ export class Engine {
         this.scenes.delete(sceneName);
 
         this.eventSystem.emit('engine:sceneRemoved', { scene, sceneName });
+        this.debugLog('Scene removed:', sceneName);
         return true;
     }
 
@@ -172,6 +184,9 @@ export class Engine {
             scene = sceneNameOrScene;
         }
 
+        // Store previous scene before changing
+        const previousScene = this.activeScene;
+
         // Deactivate current scene
         if (this.activeScene) {
             this.activeScene.onExit();
@@ -184,9 +199,14 @@ export class Engine {
         }
 
         this.eventSystem.emit('engine:activeSceneChanged', {
-            previousScene: this.activeScene,
-            newScene: scene
+            previousScene: previousScene,
+            newScene: this.activeScene
         });
+
+        this.debugLog('Active scene changed from',
+            previousScene?.name || 'none',
+            'to',
+            this.activeScene?.name || 'none');
     }
 
     /**
@@ -277,6 +297,7 @@ export class Engine {
         this.config.height = height;
 
         this.eventSystem.emit('engine:canvasResized', { width, height });
+        this.debugLog('Canvas resized to', `${width}x${height}`);
     }
 
     /**
@@ -298,7 +319,7 @@ export class Engine {
         this.initialized = false;
         this.eventSystem.emit('engine:destroyed');
 
-        console.log('GameEngine 2D destroyed');
+        this.debugLog('GameEngine 2D destroyed');
     }
 
     /**
@@ -358,5 +379,29 @@ export class Engine {
                 this.gameLoop.setEntities(entities);
             }
         });
+    }
+
+    /**
+     * Log debug messages if debug mode is enabled
+     */
+    private debugLog(message: string, ...args: any[]): void {
+        if (this.debugMode) {
+            console.log(`[GameEngine Debug] ${message}`, ...args);
+        }
+    }
+
+    /**
+     * Check if debug mode is enabled
+     */
+    isDebugMode(): boolean {
+        return this.debugMode;
+    }
+
+    /**
+     * Enable or disable debug mode
+     */
+    setDebugMode(enabled: boolean): void {
+        this.debugMode = enabled;
+        this.debugLog(`Debug mode ${enabled ? 'enabled' : 'disabled'}`);
     }
 }
