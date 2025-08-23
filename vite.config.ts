@@ -10,7 +10,7 @@ export default defineConfig({
         })
     ],
     server: {
-        open: '/examples/basic-core/index.html'
+        open: '/examples/index.html'
     },
     optimizeDeps: {
         include: ['gl-matrix']
