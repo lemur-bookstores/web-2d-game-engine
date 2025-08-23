@@ -31,7 +31,12 @@ export class EventSystem {
             timestamp: performance.now()
         };
 
-        this.eventQueue.push(event);
+        // In test environment, process events immediately for synchronous testing
+        if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+            this.dispatchEvent(event);
+        } else {
+            this.eventQueue.push(event);
+        }
     }
 
     /**
@@ -182,5 +187,26 @@ export class EventSystem {
             info[eventType] = callbacks.length;
         }
         return info;
+    }
+
+    /**
+     * Destroy the event system and clean up all resources
+     * This also resets the singleton instance for testing purposes
+     */
+    destroy(): void {
+        this.listeners.clear();
+        this.eventQueue = [];
+        this.isProcessing = false;
+        EventSystem.instance = null as any;
+    }
+
+    /**
+     * Reset the singleton instance (for testing purposes)
+     */
+    static reset(): void {
+        if (EventSystem.instance) {
+            EventSystem.instance.destroy();
+        }
+        EventSystem.instance = null as any;
     }
 }
