@@ -2,6 +2,7 @@ import { GameEngine } from '../../src';
 import { Scene } from '../../src/core/Scene';
 import { Entity } from '../../src/ecs/Entity';
 import { EventSystem } from '../../src/core/EventSystem';
+import { AssetManager } from '../../src/assets/AssetManager';
 
 class SpaceShooterGame {
     private engine: GameEngine;
@@ -10,6 +11,15 @@ class SpaceShooterGame {
     private enemies: Entity[] = [];
     private eventSystem: EventSystem;
     private score: number = 0;
+    private assetManager: AssetManager;
+    private currentShipIndex = 0;
+    private ships = [
+        'nave1',
+        'nave2',
+        'nave3',
+        'nave4',
+        'nave5'
+    ];
 
     constructor() {
         const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
@@ -17,17 +27,20 @@ class SpaceShooterGame {
             throw new Error('Canvas element not found');
         }
 
+        // Initialize asset manager
+        this.assetManager = AssetManager.getInstance();
+
         // Asegurarse de que el canvas esté visible y tenga el tamaño correcto
         canvas.style.backgroundColor = '#000';
         canvas.style.display = 'block';
 
-        // Configuración del motor con renderizado WebGL
+        // Configuración del motor con renderizado Canvas2D para garantizar compatibilidad
         this.engine = new GameEngine({
             canvas,
             width: 800,
             height: 600,
-            renderer: 'webgl',
-            debug: true // Habilitar modo debug para ver mensajes
+            renderer: 'canvas2d', // Usar Canvas2D para garantizar que las texturas se vean
+            debug: false // Desactivar debug para ver las texturas reales
         });
 
         // Escuchar eventos del motor
@@ -52,7 +65,7 @@ class SpaceShooterGame {
                 console.log('Engine initialization complete');
             });
 
-            // Initialize the game engine
+            // Initialize the game engine (now with automatic renderer fallback)
             await this.engine.initialize();
 
             // Verificar que el engine está listo
@@ -61,6 +74,10 @@ class SpaceShooterGame {
             }
 
             console.log('Engine initialized successfully');
+
+            // Load game assets after engine initialization
+            await this.loadAssets();
+
         } catch (error) {
             console.error('Failed to initialize engine:', error);
             throw error;
@@ -109,14 +126,60 @@ class SpaceShooterGame {
         this.engine.setActiveScene('game');
     }
 
-    private currentShipIndex = 0;
-    private ships = [
-        'nave1',
-        'nave2',
-        'nave3',
-        'nave4',
-        'nave5'
-    ];
+    /**
+     * Load all game assets
+     */
+    private async loadAssets(): Promise<void> {
+        try {
+            console.log('Loading game assets...');
+
+            // Load all ship textures with correct paths (relative to the HTML file)
+            await this.assetManager.loadTexture('nave1', 'assets/nave_pixel_1.png');
+            await this.assetManager.loadTexture('nave2', 'assets/nave_pixel_2.png');
+            await this.assetManager.loadTexture('nave3', 'assets/nave_pixel_3.png');
+            await this.assetManager.loadTexture('nave4', 'assets/nave_pixel_4.png');
+            await this.assetManager.loadTexture('nave5', 'assets/nave_pixel_5.png');
+
+            // Load enemy textures
+            await this.assetManager.loadTexture('enemy1', 'assets/enemi_pixel_1.png');
+            await this.assetManager.loadTexture('enemy2', 'assets/enemi_pixel_2.png');
+            await this.assetManager.loadTexture('enemy3', 'assets/enemi_pixel_3.png');
+
+            // Load projectile texture
+            await this.assetManager.loadTexture('laser', 'assets/laser_pixel.png');
+
+            console.log('All game assets loaded successfully');
+
+            // Register textures with render systems
+            this.registerTexturesWithRenderSystems();
+        } catch (error) {
+            console.error('Failed to load assets:', error);
+            throw new Error(`Asset loading failed: ${error}`);
+        }
+    }
+
+    /**
+     * Register loaded textures with all render systems
+     */
+    private registerTexturesWithRenderSystems(): void {
+        const renderSystems = this.engine.getGameLoop().getSystems().filter(system =>
+            system.constructor.name === 'RenderSystem'
+        );
+
+        const textureNames = ['nave1', 'nave2', 'nave3', 'nave4', 'nave5', 'enemy1', 'enemy2', 'enemy3', 'laser'];
+
+        renderSystems.forEach((renderSystem: any) => {
+            textureNames.forEach(textureName => {
+                const texture = this.assetManager.getTexture(textureName);
+                if (texture) {
+                    renderSystem.registerTexture(textureName, texture);
+                    console.log(`Registered texture: ${textureName}`);
+                }
+            });
+        });
+
+        console.log('All textures registered with render systems');
+    }
 
     private setupInput() {
         this.eventSystem.on('input:mousemove', (event) => {
