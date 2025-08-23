@@ -82,13 +82,19 @@ export class RenderSystem extends System {
         const transform = entity.getComponent<TransformComponent>('transform');
         const sprite = entity.getComponent<SpriteComponent>('sprite');
 
-        if (!transform || !sprite) return;
+        if (!transform || !sprite) {
+            console.log(`Entity ${entity.id} missing components - transform: ${!!transform}, sprite: ${!!sprite}`);
+            return;
+        }
 
         const texture = this.textures.get(sprite.texture);
         if (!texture) {
             console.warn(`Texture '${sprite.texture}' not found for entity ${entity.id}`);
+            console.log('Available textures:', Array.from(this.textures.keys()));
             return;
         }
+
+        // console.log(`Rendering entity ${entity.id} with texture '${sprite.texture}' at (${transform.position.x}, ${transform.position.y})`);
 
         // Calculate final position and size
         const finalPosition = new Vector2(
@@ -102,9 +108,14 @@ export class RenderSystem extends System {
         );
 
         // Render the sprite
+        // console.log(`[RenderSystem] About to call renderer.drawSprite for entity ${entity.id}`);
+        // console.log(`[RenderSystem] Renderer type:`, this.renderer.constructor.name);
+
         if (this.hasUVMapping(sprite)) {
+            // console.log(`[RenderSystem] Using UV mapping for entity ${entity.id}`);
             this.renderSpriteWithUV(texture, finalPosition, finalSize, transform.rotation, sprite);
         } else {
+            // console.log(`[RenderSystem] Using standard drawSprite for entity ${entity.id}`);
             this.renderer.drawSprite(
                 texture,
                 finalPosition,
@@ -129,14 +140,22 @@ export class RenderSystem extends System {
     ): void {
         // Check if renderer supports UV mapping (Canvas2D does, WebGL should too)
         if ('drawSpriteUV' in this.renderer) {
+            // Convert normalized UV coordinates (0-1) to pixel coordinates
+            const uvX = (sprite.uvX || 0) * texture.width;
+            const uvY = (sprite.uvY || 0) * texture.height;
+            const uvWidth = (sprite.uvWidth !== undefined ? sprite.uvWidth : 1) * texture.width;
+            const uvHeight = (sprite.uvHeight !== undefined ? sprite.uvHeight : 1) * texture.height;
+
+            // console.log(`[RenderSystem] UV conversion - Original: (${sprite.uvX}, ${sprite.uvY}, ${sprite.uvWidth}, ${sprite.uvHeight}) Converted: (${uvX}, ${uvY}, ${uvWidth}, ${uvHeight})`);
+
             (this.renderer as any).drawSpriteUV(
                 texture,
                 position,
                 size,
-                sprite.uvX || 0,
-                sprite.uvY || 0,
-                sprite.uvWidth || texture.width,
-                sprite.uvHeight || texture.height,
+                uvX,
+                uvY,
+                uvWidth,
+                uvHeight,
                 rotation,
                 sprite.flipX || false,
                 sprite.flipY || false,

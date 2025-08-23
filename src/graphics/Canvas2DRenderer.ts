@@ -29,6 +29,8 @@ export class Canvas2DRenderer implements RenderStrategy {
         rotation: number = 0,
         tint: Color = new Color(255, 255, 255, 255)
     ): void {
+        // console.log(`[Canvas2DRenderer] Drawing sprite at (${position.x}, ${position.y}) size (${size.x}, ${size.y})`);
+
         this.ctx.save();
 
         // Apply transformations
@@ -47,13 +49,29 @@ export class Canvas2DRenderer implements RenderStrategy {
 
         // Draw the sprite
         const image = texture.getImage();
-        this.ctx.drawImage(
-            image,
-            -size.x / 2,
-            -size.y / 2,
-            size.x,
-            size.y
-        );
+        // console.log(`[Canvas2DRenderer] Image loaded:`, image.complete, 'Size:', image.width, 'x', image.height);
+
+        if (image.complete && image.width > 0 && image.height > 0) {
+            this.ctx.drawImage(
+                image,
+                -size.x / 2,
+                -size.y / 2,
+                size.x,
+                size.y
+            );
+            // console.log(`[Canvas2DRenderer] Image drawn successfully`);
+        } else {
+            console.warn(`[Canvas2DRenderer] Image not ready or invalid size`, {
+                complete: image.complete,
+                width: image.width,
+                height: image.height,
+                src: image.src
+            });
+
+            // Draw a placeholder rectangle so we can see something
+            this.ctx.fillStyle = 'red';
+            this.ctx.fillRect(-size.x / 2, -size.y / 2, size.x, size.y);
+        }
 
         this.ctx.restore();
     }
@@ -71,6 +89,9 @@ export class Canvas2DRenderer implements RenderStrategy {
         flipY: boolean = false,
         tint: Color = new Color(255, 255, 255, 255)
     ): void {
+        // console.log(`[Canvas2DRenderer] Drawing sprite UV at (${position.x}, ${position.y}) size (${size.x}, ${size.y})`);
+        // console.log(`[Canvas2DRenderer] UV coords: (${uvX}, ${uvY}) size (${uvWidth}, ${uvHeight})`);
+
         this.ctx.save();
 
         // Apply transformations
@@ -104,11 +125,28 @@ export class Canvas2DRenderer implements RenderStrategy {
 
         // Draw the sprite with UV coordinates (source rectangle)
         const image = texture.getImage();
-        this.ctx.drawImage(
-            image,
-            uvX, uvY, uvWidth, uvHeight,  // Source rectangle
-            -size.x / 2, -size.y / 2, size.x, size.y  // Destination rectangle
-        );
+        // console.log(`[Canvas2DRenderer] UV Image loaded:`, image.complete, 'Size:', image.width, 'x', image.height);
+        // console.log(`[Canvas2DRenderer] UV drawImage params - Source: (${uvX}, ${uvY}, ${uvWidth}, ${uvHeight}) Dest: (${-size.x / 2}, ${-size.y / 2}, ${size.x}, ${size.y})`);
+
+        if (image.complete && image.width > 0 && image.height > 0) {
+            this.ctx.drawImage(
+                image,
+                uvX, uvY, uvWidth, uvHeight,  // Source rectangle
+                -size.x / 2, -size.y / 2, size.x, size.y  // Destination rectangle
+            );
+            // console.log(`[Canvas2DRenderer] UV Image drawn successfully`);
+        } else {
+            console.warn(`[Canvas2DRenderer] UV Image not ready or invalid size`, {
+                complete: image.complete,
+                width: image.width,
+                height: image.height,
+                src: image.src
+            });
+
+            // Draw a placeholder rectangle so we can see something
+            this.ctx.fillStyle = 'blue';
+            this.ctx.fillRect(-size.x / 2, -size.y / 2, size.x, size.y);
+        }
 
         this.ctx.restore();
     }

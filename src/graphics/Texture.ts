@@ -7,6 +7,12 @@ export class Texture {
         this.image = image;
         this.width = image.width;
         this.height = image.height;
+
+        console.log(`[Texture] Created texture with dimensions: ${this.width}x${this.height}, complete: ${image.complete}, src: ${image.src}`);
+
+        if (!image.complete) {
+            console.warn(`[Texture] Warning: Image not fully loaded when creating texture!`);
+        }
     }
 
     getImage(): HTMLImageElement {
