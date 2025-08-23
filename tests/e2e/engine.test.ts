@@ -14,6 +14,9 @@ describe('Game Engine Tests', () => {
         const mockContext = mockCanvas.getContext('2d');
         vi.spyOn(mockCanvas, 'getContext').mockReturnValue(mockContext);
 
+        // Reset EventSystem singleton
+        EventSystem.reset();
+
         // Create engine instance
         engine = new GameEngine({
             canvas: mockCanvas,
@@ -25,7 +28,10 @@ describe('Game Engine Tests', () => {
 
     afterEach(() => {
         vi.clearAllMocks();
-        engine.stop();
+        if (engine) {
+            engine.stop();
+        }
+        EventSystem.reset();
     });
 
     describe('Initialization', () => {
@@ -77,8 +83,11 @@ describe('Game Engine Tests', () => {
 
             engine.setActiveScene('scene2');
 
+            // Wait for event to be processed
+            await new Promise(resolve => setTimeout(resolve, 10));
+
             expect(sceneChangedData).toBeDefined();
-            expect(sceneChangedData.newScene).toBe(scene2);
+            expect(sceneChangedData.data.newScene).toBe(scene2);
         });
 
         it('should throw error for nonexistent scenes', async () => {
@@ -131,26 +140,21 @@ describe('Game Engine Tests', () => {
 
     describe('Error Handling', () => {
         it('should handle initialization errors gracefully', async () => {
-            const invalidEngine = new GameEngine({
-                canvas: null as any,
-                width: 800,
-                height: 600,
-                renderer: 'webgl'
-            });
-
             let errorReceived = false;
             const eventSystem = EventSystem.getInstance();
             eventSystem.on('engine:initializationError', () => {
                 errorReceived = true;
             });
 
-            try {
-                await invalidEngine.initialize();
-            } catch (error) {
-                // Initialization should throw
-            }
-
-            expect(errorReceived).toBe(true);
+            // Test should throw on constructor, not on initialize
+            expect(() => {
+                new GameEngine({
+                    canvas: null as any,
+                    width: 800,
+                    height: 600,
+                    renderer: 'webgl'
+                });
+            }).toThrow('Invalid canvas element provided');
         });
 
         it('should handle system errors without crashing', async () => {

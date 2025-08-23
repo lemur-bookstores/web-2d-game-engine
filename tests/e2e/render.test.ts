@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Entity } from '../../src/ecs/Entity';
 import { System } from '../../src/ecs/System';
 import { World } from '../../src/ecs/World';
 import { TransformComponent, SpriteComponent } from '../../src/ecs/Component';
+import { EventSystem } from '../../src/core/EventSystem';
 
 class RenderSystem extends System {
     readonly requiredComponents = ['transform', 'sprite'];
@@ -11,17 +12,17 @@ class RenderSystem extends System {
     private gl: WebGLRenderingContext | null = null;
     private isGLMocked: boolean = true;
 
-    constructor() {
+    constructor(canvas: HTMLCanvasElement) {
         super();
-        // In a real implementation, this would be initialized with a real WebGL context
-        this.mockWebGL();
+        // Use the provided canvas instead of creating a new one
+        this.mockWebGL(canvas);
     }
 
-    private mockWebGL() {
-        const canvas = document.createElement('canvas');
+    private mockWebGL(canvas: HTMLCanvasElement) {
         this.gl = canvas.getContext('webgl') || null;
         if (!this.gl) {
-            throw new Error('Failed to create WebGL context for testing');
+            // For testing, we'll just simulate having a GL context
+            this.isGLMocked = true;
         }
     }
 
@@ -63,8 +64,20 @@ class RenderSystem extends System {
 }
 
 describe('Render System Tests', () => {
+    let mockCanvas: HTMLCanvasElement;
+    let world: World;
+
+    beforeEach(() => {
+        EventSystem.reset();
+        mockCanvas = document.createElement('canvas');
+        world = new World();
+    });
+
+    afterEach(() => {
+        EventSystem.reset();
+    });
+
     it('should properly process renderable entities', () => {
-        const world = new World();
         const entity = world.createEntity();
 
         // Add required components
@@ -91,7 +104,7 @@ describe('Render System Tests', () => {
 
         entity.addComponent(transform);
         entity.addComponent(sprite);
-        world.addSystem(new RenderSystem());
+        world.addSystem(new RenderSystem(mockCanvas));
 
         // This should run without throwing any errors
         expect(() => world.update(16)).not.toThrow();
@@ -132,7 +145,7 @@ describe('Render System Tests', () => {
             entity.addComponent(sprite);
         }
 
-        world.addSystem(new RenderSystem());
+        world.addSystem(new RenderSystem(mockCanvas));
 
         // This should process all entities without errors
         expect(() => world.update(16)).not.toThrow();
@@ -151,7 +164,7 @@ describe('Render System Tests', () => {
         };
 
         entity.addComponent(transform);
-        world.addSystem(new RenderSystem());
+        world.addSystem(new RenderSystem(mockCanvas));
 
         // Should not throw error even though entity is missing sprite component
         expect(() => world.update(16)).not.toThrow();

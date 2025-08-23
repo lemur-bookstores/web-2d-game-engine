@@ -1,12 +1,26 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Entity } from '../../src/ecs/Entity';
 import { System } from '../../src/ecs/System';
 import { World } from '../../src/ecs/World';
 import { EventSystem } from '../../src/core/EventSystem';
 
 describe('Event System Tests', () => {
+    let eventSystem: EventSystem;
+
+    beforeEach(() => {
+        // Reset EventSystem singleton for each test
+        EventSystem.reset();
+        eventSystem = EventSystem.getInstance();
+    });
+
+    afterEach(() => {
+        // Clean up after each test
+        if (eventSystem) {
+            eventSystem.destroy();
+        }
+    });
+
     it('should handle event subscription and emission', () => {
-        const eventSystem = EventSystem.getInstance();
         let eventReceived = false;
 
         const handler = () => {
@@ -21,13 +35,9 @@ describe('Event System Tests', () => {
 
         // Check if handler was called
         expect(eventReceived).toBe(true);
-
-        // Cleanup
-        eventSystem.off('testEvent', handler);
     });
 
     it('should handle multiple subscribers', () => {
-        const eventSystem = EventSystem.getInstance();
         let handler1Called = false;
         let handler2Called = false;
 
@@ -46,14 +56,9 @@ describe('Event System Tests', () => {
 
         expect(handler1Called).toBe(true);
         expect(handler2Called).toBe(true);
-
-        // Cleanup
-        eventSystem.off('multiEvent', handler1);
-        eventSystem.off('multiEvent', handler2);
     });
 
     it('should handle unsubscribing from events', () => {
-        const eventSystem = EventSystem.getInstance();
         let callCount = 0;
 
         const handler = () => {
@@ -72,7 +77,6 @@ describe('Event System Tests', () => {
 
     it('should integrate with World entity lifecycle', () => {
         const world = new World();
-        const eventSystem = EventSystem.getInstance();
         let entityCreatedReceived = false;
 
         eventSystem.on('entityCreated', () => {
@@ -86,7 +90,6 @@ describe('Event System Tests', () => {
 
     it('should handle system integration with events', () => {
         const world = new World();
-        const eventSystem = EventSystem.getInstance();
         let systemProcessed = false;
 
         class TestEventSystem extends System {
@@ -104,7 +107,11 @@ describe('Event System Tests', () => {
             }
         }
 
-        world.addSystem(new TestEventSystem());
+        // Create and add the system
+        const testSystem = new TestEventSystem();
+        world.addSystem(testSystem);
+
+        // Emit the test event
         eventSystem.emit('testSystemEvent', {});
 
         expect(systemProcessed).toBe(true);
