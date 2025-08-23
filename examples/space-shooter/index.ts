@@ -12,23 +12,63 @@ class SpaceShooterGame {
     private score: number = 0;
 
     constructor() {
+        const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+        if (!canvas) {
+            throw new Error('Canvas element not found');
+        }
+
+        // Asegurarse de que el canvas esté visible y tenga el tamaño correcto
+        canvas.style.backgroundColor = '#000';
+        canvas.style.display = 'block';
+
+        // Configuración del motor con renderizado WebGL
         this.engine = new GameEngine({
-            canvas: document.getElementById('gameCanvas') as HTMLCanvasElement,
+            canvas,
             width: 800,
             height: 600,
-            renderer: 'webgl'
+            renderer: 'webgl',
+            debug: true // Habilitar modo debug para ver mensajes
         });
+
+        // Escuchar eventos del motor
+        this.eventSystem = EventSystem.getInstance();
+        this.eventSystem.on('engine:error', (error) => {
+            console.error('Engine error:', error);
+        });
+
+        console.log('Game engine created');
 
         this.eventSystem = EventSystem.getInstance();
     }
 
     async initialize() {
-        await this.engine.initialize();
+        try {
+            // Configurar listeners de eventos antes de la inicialización
+            this.eventSystem.on('engine:initializing', () => {
+                console.log('Engine is initializing...');
+            });
 
+            this.eventSystem.on('engine:initialized', () => {
+                console.log('Engine initialization complete');
+            });
+
+            // Initialize the game engine
+            await this.engine.initialize();
+
+            // Verificar que el engine está listo
+            if (!this.engine.isInitialized) {
+                throw new Error('Engine failed to initialize properly');
+            }
+
+            console.log('Engine initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize engine:', error);
+            throw error;
+        }
+
+        // Create game scene
         const gameScene = new Scene('game');
-        this.engine.addScene(gameScene);
-
-        // Create player ship
+        this.engine.addScene(gameScene);        // Create player ship
         this.player = new Entity();
 
         this.player.addComponent({
@@ -40,7 +80,7 @@ class SpaceShooterGame {
 
         this.player.addComponent({
             type: 'sprite',
-            texture: 'ship.png',
+            texture: 'nave1',
             width: 48,
             height: 48,
             tint: { r: 1, g: 1, b: 1, a: 1 },
@@ -69,6 +109,15 @@ class SpaceShooterGame {
         this.engine.setActiveScene('game');
     }
 
+    private currentShipIndex = 0;
+    private ships = [
+        'nave1',
+        'nave2',
+        'nave3',
+        'nave4',
+        'nave5'
+    ];
+
     private setupInput() {
         this.eventSystem.on('input:mousemove', (event) => {
             const mouseEvent = event.data as { position: { x: number, y: number } };
@@ -84,6 +133,21 @@ class SpaceShooterGame {
                 this.fireProjectile();
             }
         });
+
+        this.eventSystem.on('input:keyDown', (event) => {
+            const keyData = event.data as { code: string };
+            if (keyData.code === 'Space') {
+                this.changePlayerShip();
+            }
+        });
+    }
+
+    private changePlayerShip() {
+        this.currentShipIndex = (this.currentShipIndex + 1) % this.ships.length;
+        const sprite = this.player.getComponent('sprite');
+        if (sprite) {
+            sprite.texture = this.ships[this.currentShipIndex];
+        }
     }
 
     private setupEnemySpawner() {
@@ -102,12 +166,15 @@ class SpaceShooterGame {
                 scale: { x: 1, y: 1 }
             });
 
+            const enemyTypes = ['enemy1', 'enemy2', 'enemy3'];
+            const randomEnemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+
             enemy.addComponent({
                 type: 'sprite',
-                texture: 'enemy.png',
+                texture: randomEnemyType,
                 width: 32,
                 height: 32,
-                tint: { r: 1, g: 0.5, b: 0.5, a: 1 },
+                tint: { r: 1, g: 1, b: 1, a: 1 },
                 uvX: 0,
                 uvY: 0,
                 uvWidth: 1,
@@ -171,10 +238,10 @@ class SpaceShooterGame {
 
         projectile.addComponent({
             type: 'sprite',
-            texture: 'laser.png',
+            texture: 'laser',
             width: 8,
             height: 16,
-            tint: { r: 0, g: 1, b: 0, a: 1 },
+            tint: { r: 1, g: 1, b: 1, a: 1 },
             uvX: 0,
             uvY: 0,
             uvWidth: 1,
@@ -249,7 +316,14 @@ class SpaceShooterGame {
 
 // Start the game when the page loads
 window.addEventListener('load', async () => {
-    const game = new SpaceShooterGame();
-    await game.initialize();
-    game.start();
+    try {
+        console.log('Starting game initialization...');
+        const game = new SpaceShooterGame();
+        await game.initialize();
+        console.log('Game initialized successfully');
+        game.start();
+        console.log('Game started');
+    } catch (error) {
+        console.error('Error starting game:', error);
+    }
 });

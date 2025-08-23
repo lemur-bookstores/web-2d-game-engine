@@ -24,9 +24,10 @@
       }
 
       .examples {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 20px;
+        padding: 20px;
       }
 
       .example-card {
@@ -34,6 +35,11 @@
         border-radius: 8px;
         padding: 20px;
         text-align: left;
+        transition: transform 0.2s;
+      }
+
+      .example-card:hover {
+        transform: translateY(-5px);
       }
 
       .example-card h2 {
@@ -43,6 +49,7 @@
 
       .example-card p {
         margin: 10px 0;
+        color: #ccc;
       }
 
       .example-card a {
@@ -66,7 +73,7 @@
 
       <div class="examples">
         <div class="example-card">
-          <h2>Basic Core Example</h2>
+          <h2>🔰 Basic Core Example</h2>
           <p>Demuestra las funcionalidades básicas del core del engine:</p>
           <ul>
             <li>Game Loop con fixed timestep</li>
@@ -77,7 +84,29 @@
           <a href="./basic-core/index.html">Ver Ejemplo</a>
         </div>
 
-        <!-- Más ejemplos se agregarán aquí -->
+        <div class="example-card">
+          <h2>🚀 Space Shooter</h2>
+          <p>Un juego clásico de disparos espaciales que demuestra:</p>
+          <ul>
+            <li>Sistema de sprites y colisiones</li>
+            <li>Gestión de eventos de entrada</li>
+            <li>Sistema de puntuación</li>
+            <li>Gestión de proyectiles</li>
+          </ul>
+          <a href="./space-shooter/index.html">Ver Ejemplo</a>
+        </div>
+
+        <div class="example-card">
+          <h2>🎮 Platformer</h2>
+          <p>Un juego de plataformas que muestra:</p>
+          <ul>
+            <li>Sistema de física</li>
+            <li>Soporte para tilemaps</li>
+            <li>Sistema de animaciones</li>
+            <li>Colisiones con plataformas</li>
+          </ul>
+          <a href="./platformer/index.html">Ver Ejemplo</a>
+        </div>
       </div>
     </div>
   </body>
