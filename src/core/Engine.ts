@@ -2,6 +2,10 @@ import { GameLoop, System } from './GameLoop';
 import { EventSystem } from './EventSystem';
 import { Scene } from './Scene';
 import { EngineConfig } from '../types';
+import { RenderSystem } from '../graphics/RenderSystem';
+import { Canvas2DRenderer } from '../graphics/Canvas2DRenderer';
+import { WebGLRenderer } from '../graphics/WebGLRenderer';
+import { DiagnosticRenderer } from '../graphics/DiagnosticRenderer';
 
 /**
  * Main engine class that coordinates all game systems
@@ -15,6 +19,7 @@ export class Engine {
     private initialized = false;
     private config: EngineConfig;
     private debugMode: boolean;
+    private renderSystem: RenderSystem | null = null;
 
     // Engine stats
     private startTime: number = 0;
@@ -48,6 +53,9 @@ export class Engine {
 
             // Resize canvas to match config
             this.resizeCanvas(this.config.width, this.config.height);
+
+            // Detect WebGL support and fallback if necessary
+            await this.initializeRenderer();
 
             // Setup game loop to use current scene entities
             this.setupGameLoopEntityProvider();
@@ -320,6 +328,91 @@ export class Engine {
         this.eventSystem.emit('engine:destroyed');
 
         this.debugLog('GameEngine 2D destroyed');
+    }
+
+    /**
+     * Initialize the renderer with WebGL fallback to Canvas2D
+     */
+    private async initializeRenderer(): Promise<void> {
+        try {
+            this.debugLog('Initializing renderer...');
+
+            // Try WebGL first if requested
+            if (this.config.renderer === 'webgl') {
+                this.debugLog('Attempting WebGL initialization...');
+
+                if (this.isWebGLSupported()) {
+                    const webglRenderer = new WebGLRenderer();
+                    try {
+                        webglRenderer.initialize(this.canvas);
+                        this.renderSystem = new RenderSystem(webglRenderer);
+                        this.addSystem(this.renderSystem);
+                        this.debugLog('WebGL renderer initialized successfully');
+
+                        // Add diagnostic overlay if in debug mode
+                        if (this.debugMode) {
+                            this.addDiagnosticOverlay();
+                        }
+                        return;
+                    } catch (webglError) {
+                        this.debugLog('WebGL initialization failed:', webglError);
+                        console.warn('WebGL initialization failed, falling back to Canvas2D:', webglError);
+                    }
+                } else {
+                    this.debugLog('WebGL not supported, falling back to Canvas2D');
+                    console.warn('WebGL not supported, falling back to Canvas2D');
+                }
+            }
+
+            // Fallback to Canvas2D
+            this.debugLog('Initializing Canvas2D renderer...');
+            const canvas2dRenderer = new Canvas2DRenderer();
+            canvas2dRenderer.initialize(this.canvas);
+            this.renderSystem = new RenderSystem(canvas2dRenderer);
+            this.addSystem(this.renderSystem);
+            this.debugLog('Canvas2D renderer initialized successfully');
+
+            // Add diagnostic overlay if in debug mode
+            if (this.debugMode) {
+                this.addDiagnosticOverlay();
+            }
+
+        } catch (error) {
+            this.debugLog('Renderer initialization failed:', error);
+            throw new Error(`Failed to initialize renderer: ${error}`);
+        }
+    }
+
+    /**
+     * Add diagnostic overlay for debugging
+     */
+    private addDiagnosticOverlay(): void {
+        try {
+            this.debugLog('Adding diagnostic overlay...');
+            const diagnosticRenderer = new DiagnosticRenderer();
+            diagnosticRenderer.initialize(this.canvas);
+
+            // Add diagnostic system BEFORE main render system so it renders underneath
+            const diagnosticRenderSystem = new RenderSystem(diagnosticRenderer);
+            // Insert at the beginning of systems array instead of at the end
+            this.gameLoop.getSystems().unshift(diagnosticRenderSystem);
+
+            this.debugLog('Diagnostic overlay added successfully');
+        } catch (error) {
+            this.debugLog('Failed to add diagnostic overlay:', error);
+            console.warn('Failed to add diagnostic overlay:', error);
+        }
+    }    /**
+     * Check if WebGL is supported by the browser
+     */
+    private isWebGLSupported(): boolean {
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            return !!gl;
+        } catch (e) {
+            return false;
+        }
     }
 
     /**

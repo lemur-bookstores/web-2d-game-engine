@@ -1,5 +1,6 @@
 import { EventSystem } from './EventSystem';
 import { EntityId } from '../types';
+import { Entity } from '@/ecs';
 
 /**
  * Scene class for organizing and managing game entities
@@ -49,7 +50,7 @@ export class Scene {
     /**
      * Add an entity to the scene
      */
-    addEntity(entity: any): void {
+    addEntity(entity: Entity): void {
         if (!entity || !entity.id) {
             throw new Error('Entity must have a valid id');
         }

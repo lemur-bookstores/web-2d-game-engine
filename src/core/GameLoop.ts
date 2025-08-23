@@ -35,6 +35,13 @@ export class GameLoop {
     }
 
     /**
+     * get all systems in the game loop
+     */
+    getSystems(): System[] {
+        return this.systems;
+    }
+
+    /**
      * Add a system to the game loop
      */
     addSystem(system: System): void {
