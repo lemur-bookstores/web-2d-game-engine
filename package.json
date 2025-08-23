@@ -34,10 +34,12 @@
     "url": "https://github.com/lemur-bookstores/web-2d-game-engine.git"
   },
   "devDependencies": {
+    "@types/jsdom": "21.1.7",
     "@types/node": "24.3.0",
     "@typescript-eslint/eslint-plugin": "8.40.0",
     "@typescript-eslint/parser": "8.40.0",
     "eslint": "9.33.0",
+    "jsdom": "26.1.0",
     "terser": "5.43.1",
     "typescript": "5.9.2",
     "vite": "7.1.3",
