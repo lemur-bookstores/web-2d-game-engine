@@ -552,5 +552,20 @@ export class InputManager {
         this.touchStartCallbacks = [];
         this.touchMoveCallbacks = [];
         this.touchEndCallbacks = [];
+
+        // Limpiar estado interno
+        this.keysPressed.clear();
+        this.keysJustPressed.clear();
+        this.keysJustReleased.clear();
+        this.mouseButtons.clear();
+        this.mouseButtonsJustPressed.clear();
+        this.mouseButtonsJustReleased.clear();
+        this.touches.clear();
+        this.touchesJustStarted.clear();
+        this.touchesJustEnded.clear();
+        this.mousePosition.set(0, 0);
+        this.mouseDelta.set(0, 0);
+        this.wheelDelta = 0;
+        this.canvas = null;
     }
 }
