@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventSystem } from '../../src/core/EventSystem';
-import { InputManager, KeyboardEvent, MouseEvent, TouchEvent, TouchData } from '../../src/input';
+import { InputManager } from '../../src/input';
+import { createKeyboardEvent, createMouseEvent, createWheelEvent, createTouch, createTouchEvent } from '../helpers/event-helpers';
 
 describe('Input System Tests', () => {
     let inputManager: InputManager;
@@ -9,33 +10,46 @@ describe('Input System Tests', () => {
 
     beforeEach(() => {
         mockCanvas = document.createElement('canvas');
+        EventSystem.reset(); // Reset singleton
         eventSystem = EventSystem.getInstance();
         inputManager = InputManager.getInstance();
-        inputManager.initialize({ canvas: mockCanvas });
+        inputManager.initialize({
+            canvas: mockCanvas,
+            enableTouch: true,
+            enableMouse: true,
+            enableKeyboard: true
+        });
     });
 
     afterEach(() => {
-        inputManager.destroy();
+        if (inputManager) {
+            inputManager.destroy();
+        }
+        if (eventSystem) {
+            eventSystem.destroy();
+        }
         vi.clearAllMocks();
     });
 
     describe('Keyboard Input', () => {
         it('should detect key press and release', () => {
             let keyPressed = false;
-            eventSystem.on('input:keyDown', (event) => {
+            eventSystem.on('keyDown', (event) => {
                 const data = event.data as KeyboardEvent;
                 if (data.code === 'Space') keyPressed = true;
             });
 
             // Simulate keyboard event
-            const event = new KeyboardEvent('keydown', { code: 'Space' });
+            const event = createKeyboardEvent('keydown', { code: 'Space' });
+            console.log('Event before dispatch:', event);
             document.dispatchEvent(event);
+            console.log('keyPressed:', keyPressed);
 
             expect(keyPressed).toBe(true);
             expect(inputManager.isKeyPressed('Space')).toBe(true);
 
             // Simulate key release
-            const releaseEvent = new KeyboardEvent('keyup', { code: 'Space' });
+            const releaseEvent = createKeyboardEvent('keyup', { code: 'Space' });
             document.dispatchEvent(releaseEvent);
 
             expect(inputManager.isKeyPressed('Space')).toBe(false);
@@ -43,8 +57,8 @@ describe('Input System Tests', () => {
 
         it('should handle multiple keys simultaneously', () => {
             // Press multiple keys
-            document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
-            document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' }));
+            document.dispatchEvent(createKeyboardEvent('keydown', { code: 'KeyW' }));
+            document.dispatchEvent(createKeyboardEvent('keydown', { code: 'KeyA' }));
 
             expect(inputManager.isKeyPressed('KeyW')).toBe(true);
             expect(inputManager.isKeyPressed('KeyA')).toBe(true);
@@ -53,7 +67,7 @@ describe('Input System Tests', () => {
 
     describe('Mouse Input', () => {
         it('should track mouse position', () => {
-            const mouseEvent = new MouseEvent('mousemove', {
+            const mouseEvent = createMouseEvent('mousemove', {
                 clientX: 100,
                 clientY: 150
             });
@@ -65,26 +79,30 @@ describe('Input System Tests', () => {
         });
 
         it('should detect mouse buttons', () => {
-            const mouseDownEvent = new MouseEvent('mousedown', { button: 0 });
+            const mouseDownEvent = createMouseEvent('mousedown', { button: 0 });
             mockCanvas.dispatchEvent(mouseDownEvent);
 
             expect(inputManager.isMouseButtonPressed(0)).toBe(true);
 
-            const mouseUpEvent = new MouseEvent('mouseup', { button: 0 });
+            const mouseUpEvent = createMouseEvent('mouseup', { button: 0 });
             mockCanvas.dispatchEvent(mouseUpEvent);
 
             expect(inputManager.isMouseButtonPressed(0)).toBe(false);
         });
 
-        it('should handle mouse wheel events', () => {
+        it('should handle mouse wheel events', async () => {
             let wheelDelta = 0;
-            eventSystem.on('input:wheel', (event) => {
-                const data = event.data as MouseEvent;
-                wheelDelta = data.deltaY;
+            eventSystem.on('mouseWheel', (event) => {
+                wheelDelta = event.data.deltaY;
             });
 
-            const wheelEvent = new WheelEvent('wheel', { deltaY: 100 });
+            const wheelEvent = createWheelEvent('wheel', { deltaY: 100, target: mockCanvas });
+            console.log('Wheel event before dispatch:', wheelEvent);
             mockCanvas.dispatchEvent(wheelEvent);
+
+            // Give the event loop a chance to process
+            await new Promise(resolve => setTimeout(resolve, 0));
+            console.log('wheelDelta after timeout:', wheelDelta);
 
             expect(wheelDelta).toBe(100);
         });
@@ -93,27 +111,29 @@ describe('Input System Tests', () => {
     describe('Touch Input', () => {
         it('should handle touch events', () => {
             let touchStarted = false;
-            eventSystem.on('input:touchStart', () => {
+            eventSystem.on('touchStart', () => {
                 touchStarted = true;
             });
 
-            const touchEvent = new TouchEvent('touchstart', {
-                touches: [{
-                    identifier: 0,
-                    clientX: 100,
-                    clientY: 150,
-                    pageX: 100,
-                    pageY: 150,
-                    screenX: 100,
-                    screenY: 150,
-                    force: 1,
-                    radiusX: 1,
-                    radiusY: 1,
-                    rotationAngle: 0,
-                    target: mockCanvas
-                } as Touch]
+            const touch = createTouch({
+                target: mockCanvas,
+                identifier: 0,
+                clientX: 100,
+                clientY: 150,
+                pageX: 100,
+                pageY: 150,
+                screenX: 100,
+                screenY: 150,
+                force: 1,
+                radiusX: 1,
+                radiusY: 1,
+                rotationAngle: 0
             });
+
+            const touchEvent = createTouchEvent('touchstart', [touch]);
+            console.log('Touch event before dispatch:', touchEvent);
             mockCanvas.dispatchEvent(touchEvent);
+            console.log('touchStarted:', touchStarted);
 
             expect(touchStarted).toBe(true);
             const touches = inputManager.getTouches();
@@ -123,38 +143,37 @@ describe('Input System Tests', () => {
         });
 
         it('should handle multi-touch', () => {
-            const touchEvent = new TouchEvent('touchstart', {
-                touches: [
-                    {
-                        identifier: 0,
-                        clientX: 100,
-                        clientY: 150,
-                        pageX: 100,
-                        pageY: 150,
-                        screenX: 100,
-                        screenY: 150,
-                        force: 1,
-                        radiusX: 1,
-                        radiusY: 1,
-                        rotationAngle: 0,
-                        target: mockCanvas
-                    } as Touch,
-                    {
-                        identifier: 1,
-                        clientX: 200,
-                        clientY: 250,
-                        pageX: 200,
-                        pageY: 250,
-                        screenX: 200,
-                        screenY: 250,
-                        force: 1,
-                        radiusX: 1,
-                        radiusY: 1,
-                        rotationAngle: 0,
-                        target: mockCanvas
-                    } as Touch
-                ]
+            const touch1 = createTouch({
+                identifier: 0,
+                clientX: 100,
+                clientY: 150,
+                pageX: 100,
+                pageY: 150,
+                screenX: 100,
+                screenY: 150,
+                force: 1,
+                radiusX: 1,
+                radiusY: 1,
+                rotationAngle: 0,
+                target: mockCanvas
             });
+
+            const touch2 = createTouch({
+                identifier: 1,
+                clientX: 200,
+                clientY: 250,
+                pageX: 200,
+                pageY: 250,
+                screenX: 200,
+                screenY: 250,
+                force: 1,
+                radiusX: 1,
+                radiusY: 1,
+                rotationAngle: 0,
+                target: mockCanvas
+            });
+
+            const touchEvent = createTouchEvent('touchstart', [touch1, touch2]);
             mockCanvas.dispatchEvent(touchEvent);
 
             const touches = inputManager.getTouches();
