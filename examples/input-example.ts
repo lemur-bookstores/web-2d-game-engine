@@ -235,7 +235,7 @@ export function integrateWithEngine(engine: any) {
     engine.addSystem(inputSystem);
 
     // Configurar eventos globales del input
-    engine.events.on('inputAction', (event: any) => {
+    engine.events.on('INPUT:ACTION', (event: any) => {
         console.log('Input action:', event.data);
 
         switch (event.data.action) {

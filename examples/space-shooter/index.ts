@@ -3,6 +3,25 @@ import { Scene } from '../../src/core/Scene';
 import { Entity } from '../../src/ecs/Entity';
 import { EventSystem } from '../../src/core/EventSystem';
 import { AssetManager } from '../../src/assets/AssetManager';
+import { RenderSystem } from '../../src/graphics';
+import { InputManager, InputSystem } from '../../src/input';
+import { ENGINE_EVENTS, INPUT_EVENTS, PHYSICS_EVENTS } from '../../src/types/event-const';
+
+interface EventData {
+    event: {
+        button: number,
+        position: {
+            x: number,
+            y: number
+        },
+        deltaX: number,
+        deltaY: number,
+        ctrlKey: boolean,
+        shiftKey: boolean,
+        altKey: boolean,
+        metaKey: boolean
+    }
+}
 
 class SpaceShooterGame {
     private engine: GameEngine;
@@ -10,22 +29,44 @@ class SpaceShooterGame {
     private projectiles: Entity[] = [];
     private enemies: Entity[] = [];
     private eventSystem: EventSystem;
-    private score: number = 0;
+    private inputSystem: InputSystem;
     private assetManager: AssetManager;
+    private inputManager: InputManager;
+    private score: number = 0;
     private currentShipIndex = 0;
-    private ships = [
+    private playerShips = [
         'nave1',
         'nave2',
         'nave3',
         'nave4',
         'nave5'
     ];
+    private enemyShips = ['enemy1', 'enemy2', 'enemy3'];
 
     constructor() {
         const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
         if (!canvas) {
             throw new Error('Canvas element not found');
         }
+
+        // Inicializar InputManager
+        this.inputManager = InputManager.getInstance();
+        this.inputManager.initialize({
+            canvas,
+            preventDefaultKeys: [
+                "Space",
+                "ArrowUp",
+                "ArrowDown",
+                "ArrowLeft",
+                "ArrowRight",
+            ],
+            enableTouch: true,
+            enableMouse: true,
+            enableKeyboard: true,
+        });
+
+        // Crear sistema de input para ECS
+        this.inputSystem = new InputSystem();
 
         // Initialize asset manager
         this.assetManager = AssetManager.getInstance();
@@ -45,7 +86,7 @@ class SpaceShooterGame {
 
         // Escuchar eventos del motor
         this.eventSystem = EventSystem.getInstance();
-        this.eventSystem.on('engine:error', (error) => {
+        this.eventSystem.on(ENGINE_EVENTS.ERROR, (error) => {
             console.error('Engine error:', error);
         });
 
@@ -57,11 +98,11 @@ class SpaceShooterGame {
     async initialize() {
         try {
             // Configurar listeners de eventos antes de la inicialización
-            this.eventSystem.on('engine:initializing', () => {
+            this.eventSystem.on(ENGINE_EVENTS.INITIALIZING, () => {
                 console.log('Engine is initializing...');
             });
 
-            this.eventSystem.on('engine:initialized', () => {
+            this.eventSystem.on(ENGINE_EVENTS.INITIALIZED, () => {
                 console.log('Engine initialization complete');
             });
 
@@ -85,9 +126,10 @@ class SpaceShooterGame {
 
         // Create game scene
         const gameScene = new Scene('game');
-        this.engine.addScene(gameScene);        // Create player ship
-        this.player = new Entity();
+        this.engine.addScene(gameScene);
 
+        // Create player ship
+        this.player = new Entity();
         this.player.addComponent({
             type: 'transform',
             position: { x: 400, y: 550 },
@@ -100,7 +142,7 @@ class SpaceShooterGame {
             texture: 'nave1',
             width: 48,
             height: 48,
-            tint: { r: 1, g: 1, b: 1, a: 1 },
+            tint: { r: 255, g: 255, b: 255, a: 255 },
             uvX: 0,
             uvY: 0,
             uvWidth: 1,
@@ -123,7 +165,8 @@ class SpaceShooterGame {
         this.setupEnemySpawner();
         this.setupCollisionHandling();
 
-        this.engine.setActiveScene('game');
+        this.engine.addSystem(this.inputManager);
+        this.engine.setActiveScene(gameScene);
     }
 
     /**
@@ -164,11 +207,11 @@ class SpaceShooterGame {
     private registerTexturesWithRenderSystems(): void {
         const renderSystems = this.engine.getGameLoop().getSystems().filter(system =>
             system.constructor.name === 'RenderSystem'
-        );
+        ) as Array<RenderSystem>;
 
         const textureNames = ['nave1', 'nave2', 'nave3', 'nave4', 'nave5', 'enemy1', 'enemy2', 'enemy3', 'laser'];
 
-        renderSystems.forEach((renderSystem: any) => {
+        renderSystems.forEach((renderSystem) => {
             textureNames.forEach(textureName => {
                 const texture = this.assetManager.getTexture(textureName);
                 if (texture) {
@@ -178,26 +221,53 @@ class SpaceShooterGame {
             });
         });
 
-        console.log('All textures registered with render systems');
+        console.log('All textures registered with render systems.');
     }
 
     private setupInput() {
-        this.eventSystem.on('input:mousemove', (event) => {
-            const mouseEvent = event.data as { position: { x: number, y: number } };
+        this.eventSystem.on(INPUT_EVENTS.KEYDOWN, (event) => {
+            console.log(`[EventSystem] Event received: ${INPUT_EVENTS.KEYDOWN}`, event);
+            const keyData = event.data as { code: string };
+            const transform = this.player.getComponent('transform');
+            if (!transform) return;
+
+            const speed = 10; // Velocidad de movimiento
+
+            switch (keyData.code) {
+                case 'ArrowUp':
+                    transform.position.y -= speed;
+                    break;
+                case 'ArrowDown':
+                    transform.position.y += speed;
+                    break;
+                case 'ArrowLeft':
+                    transform.position.x -= speed;
+                    break;
+                case 'ArrowRight':
+                    transform.position.x += speed;
+                    break;
+            }
+        });
+
+        this.eventSystem.on<EventData>(INPUT_EVENTS.MOUSEMOVE, ({ data, type }) => {
+            const { event: mouseEvent } = data;
+
             const transform = this.player.getComponent('transform');
             if (transform) {
                 transform.position.x = mouseEvent.position.x;
             }
         });
 
-        this.eventSystem.on('input:mousedown', (event) => {
-            const mouseData = event.data;
-            if (mouseData.button === 0) { // Left click
+        this.eventSystem.on<EventData>(INPUT_EVENTS.MOUSEDOWN, ({ data, type }) => {
+            console.log({ data });
+
+            const { event: mouseEvent } = data;
+            if (mouseEvent.button === 0) { // Left click
                 this.fireProjectile();
             }
         });
 
-        this.eventSystem.on('input:keyDown', (event) => {
+        this.eventSystem.on(INPUT_EVENTS.KEYDOWN, (event) => {
             const keyData = event.data as { code: string };
             if (keyData.code === 'Space') {
                 this.changePlayerShip();
@@ -206,10 +276,10 @@ class SpaceShooterGame {
     }
 
     private changePlayerShip() {
-        this.currentShipIndex = (this.currentShipIndex + 1) % this.ships.length;
+        this.currentShipIndex = (this.currentShipIndex + 1) % this.playerShips.length;
         const sprite = this.player.getComponent('sprite');
         if (sprite) {
-            sprite.texture = this.ships[this.currentShipIndex];
+            sprite.texture = this.playerShips[this.currentShipIndex];
         }
     }
 
@@ -218,26 +288,25 @@ class SpaceShooterGame {
             if (!this.engine.isRunning) return;
 
             const enemy = new Entity();
+            const randomEnemyType = this.enemyShips[Math.floor(Math.random() * this.enemyShips.length)];
 
             enemy.addComponent({
                 type: 'transform',
                 position: {
                     x: Math.random() * 800,
-                    y: -50
+                    y: 50
                 },
-                rotation: 180,
+                rotation: 90,
                 scale: { x: 1, y: 1 }
             });
 
-            const enemyTypes = ['enemy1', 'enemy2', 'enemy3'];
-            const randomEnemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
 
             enemy.addComponent({
                 type: 'sprite',
                 texture: randomEnemyType,
-                width: 32,
-                height: 32,
-                tint: { r: 1, g: 1, b: 1, a: 1 },
+                width: 48,
+                height: 48,
+                tint: { r: 255, g: 255, b: 255, a: 200 },
                 uvX: 0,
                 uvY: 0,
                 uvWidth: 1,
@@ -262,13 +331,14 @@ class SpaceShooterGame {
                 isTrigger: false
             });
 
+
             this.enemies.push(enemy);
             this.engine.getActiveScene()?.addEntity(enemy);
         }, 2000);
     }
 
     private setupCollisionHandling() {
-        this.eventSystem.on('collision', (event) => {
+        this.eventSystem.on(PHYSICS_EVENTS.COLLISION_BEGIN, (event) => {
             const collisionData = event.data as { entityA: Entity; entityB: Entity };
             const { entityA, entityB } = collisionData;
 
@@ -304,7 +374,7 @@ class SpaceShooterGame {
             texture: 'laser',
             width: 8,
             height: 16,
-            tint: { r: 1, g: 1, b: 1, a: 1 },
+            tint: { r: 255, g: 255, b: 255, a: 255 },
             uvX: 0,
             uvY: 0,
             uvWidth: 1,
@@ -316,7 +386,7 @@ class SpaceShooterGame {
         projectile.addComponent({
             type: 'physics',
             velocity: { x: 0, y: -400 },
-            acceleration: { x: 0, y: 0 },
+            acceleration: { x: 1, y: 1 },
             mass: 1,
             friction: 0,
             restitution: 1
