@@ -1,7 +1,9 @@
+/// <reference types="vitest" />
 import { AnimationSystem } from '../../src/graphics/AnimationSystem';
 import { SpriteSheet } from '../../src/graphics/SpriteSheet';
 import { AnimationComponent } from '../../src/graphics/Animation';
 import { Entity } from '../../src/ecs/Entity';
+import { expect, test } from 'vitest';
 
 // Mock a minimal spriteSheet with frame metadata
 const mockTexture: any = { width: 64, height: 16, dispose: () => { } };
@@ -21,7 +23,9 @@ test('AnimationSystem advances frame with deltaTime', () => {
         frameTime: 0.1,
         elapsedTime: 0,
         loop: true,
-        playing: true
+        playing: true,
+        // satisfy type which may require an animations map/cache
+        animations: new Map()
     };
 
     entity.addComponent(anim);
