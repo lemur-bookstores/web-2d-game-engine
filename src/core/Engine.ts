@@ -247,6 +247,20 @@ export class Engine {
     }
 
     /**
+     * Get the engine configuration
+     */
+    getWidth(): number {
+        return this.config.width;
+    }
+
+    /**
+     * Get the engine configuration
+     */
+    getHeight(): number {
+        return this.config.height;
+    }
+
+    /**
      * Get the event system
      */
     getEventSystem(): EventSystem {

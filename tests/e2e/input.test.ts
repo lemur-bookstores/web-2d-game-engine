@@ -94,10 +94,10 @@ describe('Input System Tests', () => {
             // Modificar directamente el wheelDelta en el InputManager
             const inputManager = InputManager.getInstance();
             inputManager['wheelDelta'] = 100;
-            
+
             // Emitir el evento manualmente
             eventSystem.emit('mouseWheel', { deltaY: 100 });
-            
+
             // Verificar que el valor se ha establecido correctamente
             expect(inputManager['wheelDelta']).toBe(100);
         });
@@ -121,18 +121,18 @@ describe('Input System Tests', () => {
             // Agregar directamente al InputManager
             const inputManager = InputManager.getInstance();
             inputManager['touches'].set(0, touchData);
-            
+
             // Emitir el evento manualmente
-            eventSystem.emit('touchStart', { 
+            eventSystem.emit('touchStart', {
                 event: {
                     touches: [touchData],
                     changedTouches: [touchData]
                 }
             });
-            
+
             // Verificar que el evento fue disparado
             expect(touchStarted).toBe(true);
-            
+
             // Verificar que los datos del touch están correctos
             const touches = inputManager.getTouches();
             expect(touches.length).toBe(1);
