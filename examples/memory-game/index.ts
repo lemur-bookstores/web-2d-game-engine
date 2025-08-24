@@ -3,9 +3,7 @@ import { Scene } from '../../src/core/Scene';
 import { Entity } from '../../src/ecs/Entity';
 import { EventSystem } from '../../src/core/EventSystem';
 import { InputManager, InputSystem } from '../../src/input';
-import { RenderSystem } from '../../src/graphics';
 import { ENGINE_EVENTS, INPUT_EVENTS } from '../../src/types/event-const';
-import { Vector2 } from '../../src/math/Vector2';
 
 class MemoryGame {
     private engine: GameEngine;
@@ -76,14 +74,21 @@ class MemoryGame {
     async initialize() {
         // Crear escena principal
         const mainScene = new Scene('main');
-        
-        // Añadir sistemas a la escena
-        mainScene.addSystem(new RenderSystem());
-        mainScene.addSystem(this.inputSystem);
+
+        // Añadir sistemas al motor
+        this.engine.addSystem(this.inputManager);
 
         // Registrar la escena en el motor
         this.engine.addScene(mainScene);
         this.engine.setActiveScene('main');
+
+        // Initialize the game engine (now with automatic renderer fallback)
+        await this.engine.initialize();
+
+        // Verificar que el engine está listo
+        if (!this.engine.isInitialized) {
+            throw new Error('Engine failed to initialize properly');
+        }
 
         // Crear cartas del juego
         this.createCards();
@@ -133,7 +138,7 @@ class MemoryGame {
     private createCards() {
         // Limpiar cartas existentes
         this.cards.forEach(card => {
-            this.engine.getActiveScene().removeEntity(card.id);
+            this.engine.getActiveScene()?.removeEntity(card.id);
         });
         this.cards = [];
 
@@ -175,11 +180,11 @@ class MemoryGame {
 
                 const x = startX + col * (this.cardWidth + spacing);
                 const y = startY + row * (this.cardHeight + spacing);
-                
+
                 const card = this.createCard(cardIndex, this.cardValues[cardIndex], x, y);
                 this.cards.push(card);
-                this.engine.getActiveScene().addEntity(card);
-                
+                this.engine.getActiveScene()?.addEntity(card);
+
                 cardIndex++;
             }
         }
@@ -187,7 +192,7 @@ class MemoryGame {
 
     private createCard(index: number, value: number, x: number, y: number): Entity {
         const card = new Entity(`card_${index}`);
-        
+
         // Añadir componente de transformación
         card.addComponent({
             type: 'transform',
@@ -219,7 +224,7 @@ class MemoryGame {
         // Manejar clics en las cartas
         this.eventSystem.on(INPUT_EVENTS.MOUSEDOWN, (data: any) => {
             if (this.gameOver || !this.canFlip) return;
-            
+
             const clickedCard = this.findCardAtPosition(data.position.x, data.position.y);
             if (clickedCard) {
                 this.handleCardClick(clickedCard);
@@ -229,7 +234,7 @@ class MemoryGame {
         // Soporte para dispositivos táctiles
         this.eventSystem.on(INPUT_EVENTS.TOUCHSTART, (data: any) => {
             if (this.gameOver || !this.canFlip) return;
-            
+
             if (data.touches && data.touches.length > 0) {
                 const touch = data.touches[0];
                 const touchedCard = this.findCardAtPosition(touch.position.x, touch.position.y);
@@ -240,7 +245,7 @@ class MemoryGame {
         });
 
         // Actualizar lógica del juego en cada frame
-        this.eventSystem.on(ENGINE_EVENTS.UPDATE, (deltaTime: number) => {
+        this.eventSystem.on(ENGINE_EVENTS.UPDATE, () => {
             if (this.gameStarted && !this.gameOver) {
                 this.updateTimer();
             }
@@ -250,12 +255,14 @@ class MemoryGame {
     private findCardAtPosition(x: number, y: number): Entity | null {
         for (const card of this.cards) {
             const transform = card.getComponent('transform');
+            if (!transform) continue;
             const rect = card.getComponent('rectangle');
+            if (!rect) continue;
             const custom = card.getComponent('custom');
-            
             // Ignorar cartas ya emparejadas
-            if (custom.isMatched) continue;
-            
+            if (!custom || custom.isMatched) continue;
+
+
             // Comprobar si el punto está dentro de la carta
             if (x >= transform.position.x - rect.width / 2 &&
                 x <= transform.position.x + rect.width / 2 &&
@@ -264,34 +271,34 @@ class MemoryGame {
                 return card;
             }
         }
-        
+
         return null;
     }
 
     private handleCardClick(card: Entity) {
         const custom = card.getComponent('custom');
-        
+
         // Ignorar si la carta ya está volteada o emparejada
-        if (custom.isFlipped || custom.isMatched) return;
-        
+        if (!custom || custom.isFlipped || custom.isMatched) return;
+
         // Voltear la carta
         this.flipCard(card, true);
-        
+
         // Añadir a la lista de cartas volteadas
         this.flippedCards.push(card);
-        
+
         // Si hay dos cartas volteadas, comprobar si son pareja
         if (this.flippedCards.length === 2) {
             this.moves++;
             this.updateUI();
-            
+
             const card1 = this.flippedCards[0];
             const card2 = this.flippedCards[1];
-            
-            const value1 = card1.getComponent('custom').value;
-            const value2 = card2.getComponent('custom').value;
-            
-            if (value1 === value2) {
+
+            const value1 = card1.getComponent('custom');
+            const value2 = card2.getComponent('custom');
+            if (!value1 || !value2) return;
+            if (value1.value === value2.value) {
                 // Es una pareja
                 this.handleMatch();
             } else {
@@ -309,10 +316,12 @@ class MemoryGame {
 
     private flipCard(card: Entity, isFlipped: boolean) {
         const custom = card.getComponent('custom');
+        if (!custom) return;
         const rect = card.getComponent('rectangle');
-        
+        if (!rect) return;
+
         custom.isFlipped = isFlipped;
-        
+
         if (isFlipped) {
             // Mostrar el color correspondiente al valor
             const colorIndex = custom.value % this.cardFrontColors.length;
@@ -326,16 +335,18 @@ class MemoryGame {
     private handleMatch() {
         // Marcar las cartas como emparejadas
         this.flippedCards.forEach(card => {
-            card.getComponent('custom').isMatched = true;
+            const custom = card.getComponent('custom');
+            if (!custom) return;
+            custom.isMatched = true;
         });
-        
+
         // Incrementar contador de parejas
         this.matchedPairs++;
         this.updateUI();
-        
+
         // Limpiar lista de cartas volteadas
         this.flippedCards = [];
-        
+
         // Comprobar si se han encontrado todas las parejas
         if (this.matchedPairs === this.totalPairs) {
             this.handleGameComplete();
@@ -345,7 +356,7 @@ class MemoryGame {
     private handleGameComplete() {
         this.gameOver = true;
         clearInterval(this.timerInterval as number);
-        
+
         setTimeout(() => {
             alert(`¡Juego completado! Movimientos: ${this.moves}, Tiempo: ${this.formatTime(this.elapsedTime)}`);
         }, 500);
@@ -359,16 +370,16 @@ class MemoryGame {
         this.flippedCards = [];
         this.startTime = Date.now();
         this.elapsedTime = 0;
-        
+
         // Iniciar temporizador
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
         }
-        
+
         this.timerInterval = setInterval(() => {
             this.updateUI();
         }, 1000) as unknown as number;
-        
+
         this.updateUI();
     }
 
@@ -377,10 +388,10 @@ class MemoryGame {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
         }
-        
+
         // Recrear cartas
         this.createCards();
-        
+
         // Reiniciar variables del juego
         this.startGame();
     }
@@ -395,7 +406,7 @@ class MemoryGame {
         const movesElement = document.getElementById('moves');
         const timeElement = document.getElementById('time');
         const pairsElement = document.getElementById('pairs');
-        
+
         if (movesElement) movesElement.textContent = this.moves.toString();
         if (timeElement) timeElement.textContent = this.formatTime(this.elapsedTime);
         if (pairsElement) pairsElement.textContent = `${this.matchedPairs} / ${this.totalPairs}`;
