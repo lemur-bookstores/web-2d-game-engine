@@ -5,6 +5,8 @@ import { EventSystem } from '../../src/core/EventSystem';
 import { AssetManager } from '../../src/assets/AssetManager';
 import { RenderSystem } from '../../src/graphics';
 import { InputManager, InputSystem } from '../../src/input';
+import { MovementSystem } from '../../src/ecs/MovementSystem';
+import { CollisionSystem } from '../../src/ecs/CollisionSystem';
 import { ENGINE_EVENTS, INPUT_EVENTS, PHYSICS_EVENTS } from '../../src/types/event-const';
 
 interface EventData {
@@ -165,7 +167,15 @@ class SpaceShooterGame {
         this.setupEnemySpawner();
         this.setupCollisionHandling();
 
+        // Add the movement system to handle physics components
+        this.engine.addSystem(new MovementSystem());
+        // Add the collision system to handle collisions
+        this.engine.addSystem(new CollisionSystem());
         this.engine.addSystem(this.inputManager);
+
+        // Setup cleanup for entities that go off-screen
+        this.setupCleanup();
+
         this.engine.setActiveScene(gameScene);
     }
 
@@ -317,11 +327,13 @@ class SpaceShooterGame {
 
             enemy.addComponent({
                 type: 'physics',
-                velocity: { x: 0, y: 100 },
-                acceleration: { x: 0, y: 0 },
-                mass: 1,
+                bodyType: 'dynamic',
+                shape: 'box',
+                density: 1,
                 friction: 0,
-                restitution: 1
+                restitution: 1,
+                velocity: { x: 0, y: 100 },
+                angularVelocity: 0
             });
 
             enemy.addComponent({
@@ -339,6 +351,7 @@ class SpaceShooterGame {
 
     private setupCollisionHandling() {
         this.eventSystem.on(PHYSICS_EVENTS.COLLISION_BEGIN, (event) => {
+            console.log('Collision event received:', event);
             const collisionData = event.data as { entityA: Entity; entityB: Entity };
             const { entityA, entityB } = collisionData;
 
@@ -385,11 +398,13 @@ class SpaceShooterGame {
 
         projectile.addComponent({
             type: 'physics',
-            velocity: { x: 0, y: -400 },
-            acceleration: { x: 1, y: 1 },
-            mass: 1,
+            bodyType: 'dynamic',
+            shape: 'box',
+            density: 1,
             friction: 0,
-            restitution: 1
+            restitution: 1,
+            velocity: { x: 0, y: -400 },
+            angularVelocity: 0
         });
 
         projectile.addComponent({
@@ -436,6 +451,36 @@ class SpaceShooterGame {
 
     private updateScore() {
         document.getElementById('score')!.textContent = `Score: ${this.score}`;
+    }
+
+    private setupCleanup() {
+        // Clean up entities that go off-screen every 100ms
+        setInterval(() => {
+            if (!this.engine.isRunning) return;
+
+            const canvasHeight = this.engine.getCanvas().height;
+            const canvasWidth = this.engine.getCanvas().width;
+
+            // Clean up projectiles that go off-screen (top)
+            this.projectiles = this.projectiles.filter(projectile => {
+                const transform = projectile.getComponent('transform');
+                if (transform && transform.position.y < -50) {
+                    this.engine.getActiveScene()?.removeEntity(projectile.id);
+                    return false;
+                }
+                return true;
+            });
+
+            // Clean up enemies that go off-screen (bottom)
+            this.enemies = this.enemies.filter(enemy => {
+                const transform = enemy.getComponent('transform');
+                if (transform && transform.position.y > canvasHeight + 50) {
+                    this.engine.getActiveScene()?.removeEntity(enemy.id);
+                    return false;
+                }
+                return true;
+            });
+        }, 100);
     }
 
     start() {
