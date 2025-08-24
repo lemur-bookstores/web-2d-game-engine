@@ -6,8 +6,8 @@ export class Entity {
     public active: boolean;
     private components: Map<string, Component>;
 
-    constructor() {
-        this.id = uuidv4();
+    constructor(id?: string) {
+        this.id = id || uuidv4();
         this.active = true;
         this.components = new Map();
     }
