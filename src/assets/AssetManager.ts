@@ -2,6 +2,7 @@ import { EventSystem } from '../core/EventSystem';
 import { AssetLoader, AssetType, AssetLoadEvent } from './AssetLoader';
 import { Texture, SpriteSheet } from '../graphics';
 import { GameEvent } from '../types';
+import { ASSET_EVENTS } from '@/types/event-const';
 
 interface Asset {
     type: AssetType;
@@ -29,17 +30,17 @@ export class AssetManager {
     }
 
     private setupEventListeners(): void {
-        this.eventSystem.on('assetLoaded', (event: GameEvent) => {
+        this.eventSystem.on(ASSET_EVENTS.LOADED, (event: GameEvent) => {
             const assetEvent = event.data as AssetLoadEvent;
             console.log(`Asset loaded: ${assetEvent.asset}`);
         });
 
-        this.eventSystem.on('assetError', (event: GameEvent) => {
+        this.eventSystem.on(ASSET_EVENTS.ERROR, (event: GameEvent) => {
             const assetEvent = event.data as AssetLoadEvent;
             console.error(`Error loading asset: ${assetEvent.asset}`, assetEvent.error);
         });
 
-        this.eventSystem.on('assetProgress', (event: GameEvent) => {
+        this.eventSystem.on(ASSET_EVENTS.PROGRESS, (event: GameEvent) => {
             const assetEvent = event.data as AssetLoadEvent;
             console.log(`Loading progress: ${assetEvent.progress! * 100}%`);
         });
