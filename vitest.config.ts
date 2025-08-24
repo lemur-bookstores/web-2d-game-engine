@@ -12,6 +12,9 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  esbuild: {
+    loader: 'ts',
+  },
   define: {
     'process.env.NODE_ENV': '"test"',
   },
