@@ -425,7 +425,14 @@ Para más detalles, explora:
   - Joints y constraints
   - Partículas y efectos
 
-- [ ] **v0.5.0 - Herramientas**
+- [ ] **v0.5.0 - Layers y Camera**
+
+  - Sistema de capas para organizar elementos por profundidad
+  - Camera2D con viewport, zoom y seguimiento de entidades
+  - Efectos de cámara (shake, smooth follow, transitions)
+  - Culling automático fuera del viewport
+
+- [ ] **v0.6.0 - Herramientas**
   - Editor de niveles web
   - Inspector de entidades en tiempo real
   - Profiler de rendimiento
@@ -437,6 +444,8 @@ Para más detalles, explora:
 - [ ] Soporte para mobile con controles táctiles
 - [ ] Networking para juegos multijugador
 - [ ] Plugin system para extensiones
+- [ ] Parallax scrolling para fondos con múltiples capas
+- [ ] Modos de mezcla y efectos visuales por capa
 
 ## 🤝 Contribución
 
