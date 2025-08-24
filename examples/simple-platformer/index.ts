@@ -75,11 +75,11 @@ class SimplePlatformer {
         // Crear escena principal
         const mainScene = new Scene('main');
         
-        // Añadir sistemas a la escena
-        mainScene.addSystem(new RenderSystem());
-        mainScene.addSystem(this.inputSystem);
-        mainScene.addSystem(new MovementSystem());
-        mainScene.addSystem(new CollisionSystem());
+        // Añadir sistemas al motor
+        this.engine.addSystem(new RenderSystem());
+        this.engine.addSystem(this.inputSystem);
+        this.engine.addSystem(new MovementSystem());
+        this.engine.addSystem(new CollisionSystem());
 
         // Registrar la escena en el motor
         this.engine.addScene(mainScene);

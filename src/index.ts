@@ -7,4 +7,4 @@ export * from './types';
 export { Engine as GameEngine } from './core/Engine';
 
 // Version
-export const VERSION = '0.1.0';
+export const VERSION = '0.0.1';
