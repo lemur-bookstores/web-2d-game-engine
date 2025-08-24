@@ -3,13 +3,16 @@ import { Entity } from '../ecs/Entity';
 import { AnimationComponent } from './Animation';
 import { SpriteComponent } from './Sprite';
 import { SpriteSheet, Animation } from './SpriteSheet';
+import { AssetManager } from '../assets/AssetManager';
 
 export class AnimationSystem extends System {
     requiredComponents = ['animation', 'sprite'];
     private spriteSheets = new Map<string, SpriteSheet>();
+    private assetManager: AssetManager | null = null;
 
-    constructor() {
+    constructor(assetManager?: AssetManager) {
         super();
+        if (assetManager) this.assetManager = assetManager;
     }
 
     registerSpriteSheet(name: string, spriteSheet: SpriteSheet): void {
@@ -41,7 +44,17 @@ export class AnimationSystem extends System {
 
         if (!animComponent || !spriteComponent || !animComponent.playing) return;
 
-        const spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
+        let spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
+
+        // If not registered manually, try to resolve via AssetManager
+        if (!spriteSheet && this.assetManager) {
+            const ss = this.assetManager.getSpriteSheet(animComponent.spriteSheet);
+            if (ss) {
+                this.registerSpriteSheet(animComponent.spriteSheet, ss);
+                spriteSheet = ss;
+            }
+        }
+
         if (!spriteSheet) return;
 
         const currentAnim = spriteSheet.getAnimation(animComponent.currentAnimation);
