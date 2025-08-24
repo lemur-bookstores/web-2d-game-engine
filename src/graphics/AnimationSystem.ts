@@ -4,15 +4,19 @@ import { AnimationComponent } from './Animation';
 import { SpriteComponent } from './Sprite';
 import { SpriteSheet, Animation } from './SpriteSheet';
 import { AssetManager } from '../assets/AssetManager';
+import { EventSystem } from '../core/EventSystem';
+import { ANIMATION_EVENTS } from '../types/event-const';
 
 export class AnimationSystem extends System {
     requiredComponents = ['animation', 'sprite'];
     private spriteSheets = new Map<string, SpriteSheet>();
     private assetManager: AssetManager | null = null;
+    private eventSystem?: EventSystem;
 
     constructor(assetManager?: AssetManager) {
         super();
         if (assetManager) this.assetManager = assetManager;
+        this.eventSystem = EventSystem.getInstance();
     }
 
     registerSpriteSheet(name: string, spriteSheet: SpriteSheet): void {
@@ -64,17 +68,30 @@ export class AnimationSystem extends System {
         animComponent.elapsedTime += deltaTime;
 
         // Cambiar frame si es necesario
+        let frameChanged = false;
         if (animComponent.elapsedTime >= animComponent.frameTime) {
+            const prevFrame = animComponent.currentFrame;
             const animationComplete = this.nextFrame(animComponent, currentAnim);
             animComponent.elapsedTime = 0;
 
             if (animationComplete) {
                 this.onAnimationComplete(entity, currentAnim.name);
             }
+
+            frameChanged = animComponent.currentFrame !== prevFrame;
         }
 
         // Actualizar UV coordinates del sprite
         this.updateSpriteUV(spriteComponent, spriteSheet, animComponent, currentAnim);
+
+        // Emit FRAME event if frame changed
+        if (frameChanged && this.eventSystem) {
+            this.eventSystem.emit(ANIMATION_EVENTS.FRAME, {
+                entity,
+                animationName: animComponent.currentAnimation,
+                frameIndex: animComponent.currentFrame,
+            });
+        }
     }
 
     private nextFrame(animComponent: AnimationComponent, animation: Animation): boolean {
@@ -147,8 +164,9 @@ export class AnimationSystem extends System {
 
     private onAnimationComplete(entity: Entity, animationName: string): void {
         // Emit animation complete event
-        // This would integrate with the event system when available
-        console.log(`Animation '${animationName}' completed for entity ${entity.id}`);
+        if (this.eventSystem) {
+            this.eventSystem.emit(ANIMATION_EVENTS.COMPLETE, { entity, animationName });
+        }
     }
 
     // Public methods for animation control

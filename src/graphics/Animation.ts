@@ -10,6 +10,8 @@ export interface AnimationComponent {
     loop: boolean;
     playing: boolean;
     animations: Map<string, Animation>;
+    // Optional mapping from animation frame index -> sfx clip name
+    frameSfx?: { [frameIndex: number]: string };
 }
 
 export class AnimationState {
