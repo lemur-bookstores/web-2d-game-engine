@@ -1,6 +1,7 @@
 import { EventSystem } from './EventSystem';
 import { EntityId } from '../types';
 import { Entity } from '@/ecs';
+import { SCENE_EVENTS } from '@/types/event-const';
 
 /**
  * Scene class for organizing and managing game entities
@@ -28,7 +29,7 @@ export class Scene {
         }
 
         this.initialized = true;
-        this.eventSystem.emit('scene:initialize', { scene: this });
+        this.eventSystem.emit(SCENE_EVENTS.INITIALIZE, { scene: this });
     }
 
     /**
@@ -36,7 +37,7 @@ export class Scene {
      */
     activate(): void {
         this.active = true;
-        this.eventSystem.emit('scene:activate', { scene: this });
+        this.eventSystem.emit(SCENE_EVENTS.ACTIVATE, { scene: this });
     }
 
     /**
@@ -44,7 +45,7 @@ export class Scene {
      */
     deactivate(): void {
         this.active = false;
-        this.eventSystem.emit('scene:deactivate', { scene: this });
+        this.eventSystem.emit(SCENE_EVENTS.DEACTIVATE, { scene: this });
     }
 
     /**
@@ -61,7 +62,7 @@ export class Scene {
         }
 
         this.entities.set(entity.id, entity);
-        this.eventSystem.emit('scene:entityAdded', {
+        this.eventSystem.emit(SCENE_EVENTS.ENTITY_ADDED, {
             scene: this,
             entity,
             entityId: entity.id
@@ -78,7 +79,7 @@ export class Scene {
         }
 
         this.entities.delete(entityId);
-        this.eventSystem.emit('scene:entityRemoved', {
+        this.eventSystem.emit(SCENE_EVENTS.ENTITY_REMOVED, {
             scene: this,
             entity,
             entityId
@@ -172,7 +173,7 @@ export class Scene {
             this.removeEntity(entityId);
         }
 
-        this.eventSystem.emit('scene:cleared', { scene: this });
+        this.eventSystem.emit(SCENE_EVENTS.CLEARED, { scene: this });
     }
 
     /**
@@ -181,7 +182,7 @@ export class Scene {
     update(deltaTime: number): void {
         if (!this.active) return;
 
-        this.eventSystem.emit('scene:update', {
+        this.eventSystem.emit(SCENE_EVENTS.UPDATE, {
             scene: this,
             deltaTime,
             entities: this.getActiveEntities()
@@ -193,7 +194,7 @@ export class Scene {
      */
     onEnter(): void {
         this.activate();
-        this.eventSystem.emit('scene:enter', { scene: this });
+        this.eventSystem.emit(SCENE_EVENTS.ENTER, { scene: this });
     }
 
     /**
@@ -201,7 +202,7 @@ export class Scene {
      */
     onExit(): void {
         this.deactivate();
-        this.eventSystem.emit('scene:exit', { scene: this });
+        this.eventSystem.emit(SCENE_EVENTS.EXIT, { scene: this });
     }
 
     /**
@@ -212,7 +213,7 @@ export class Scene {
         this.deactivate();
         this.initialized = false;
 
-        this.eventSystem.emit('scene:destroy', { scene: this });
+        this.eventSystem.emit(SCENE_EVENTS.DESTROY, { scene: this });
     }
 
     /**

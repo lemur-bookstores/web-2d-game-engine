@@ -261,7 +261,9 @@
 
           // Add initial entities
           for (let i = 0; i < 5; i++) {
-            addTestEntity();
+            setTimeout(() => {
+              addTestEntity();
+            }, i * 1000);
           }
 
           engine.start();

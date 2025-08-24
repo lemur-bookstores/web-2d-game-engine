@@ -1,6 +1,12 @@
 /**
  * Type definitions for the GameEngine 2D
  */
+export interface Position {
+    x: number;
+    y: number;
+}
+
+export interface Scale extends Position { }
 
 export interface EngineConfig {
     canvas: string | HTMLCanvasElement;
@@ -13,13 +19,13 @@ export interface EngineConfig {
     debug?: boolean;
 }
 
-export interface GameEvent {
-    type: string;
-    data: any;
+export interface GameEvent<T = any> {
+    type: AllEventTypes;
+    data: T;
     timestamp: number;
 }
 
-export type EventCallback = (event: GameEvent) => void;
+export type EventCallback<T> = (event: GameEvent<T>) => void;
 
 export interface Color {
     r: number;
@@ -36,11 +42,11 @@ export interface Rectangle {
 }
 
 export interface TransformData {
-    position: { x: number; y: number };
+    position: Position;
     rotation: number;
-    scale: { x: number; y: number };
+    scale: Scale;
 }
 
-export type SystemUpdateFunction = (entities: any[], deltaTime: number) => void;
+export type SystemUpdateFunction = <T>(entities: T[], deltaTime: number) => void;
 export type ComponentType = string;
 export type EntityId = string;

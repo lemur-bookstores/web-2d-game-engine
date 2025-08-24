@@ -1,3 +1,4 @@
+import { GAMELOOP_EVENTS } from '@/types/event-const';
 import { EventSystem } from './EventSystem';
 
 /**
@@ -86,7 +87,7 @@ export class GameLoop {
         this.frameCount = 0;
         this.fpsUpdateTime = this.lastTime;
 
-        this.eventSystem.emit('gameloop:start');
+        this.eventSystem.emit(GAMELOOP_EVENTS.START);
         this.loop();
     }
 
@@ -104,7 +105,7 @@ export class GameLoop {
             this.requestId = null;
         }
 
-        this.eventSystem.emit('gameloop:stop');
+        this.eventSystem.emit(GAMELOOP_EVENTS.STOP);
     }
 
     /**
@@ -176,7 +177,7 @@ export class GameLoop {
      * Fixed timestep update for consistent physics and game logic
      */
     private fixedUpdate(deltaTime: number): void {
-        this.eventSystem.emit('gameloop:fixedUpdate', { deltaTime });
+        this.eventSystem.emit(GAMELOOP_EVENTS.FIXED_UPDATE, { deltaTime });
 
         // Update all systems with fixed timestep
         for (const system of this.systems) {
@@ -184,24 +185,24 @@ export class GameLoop {
                 system.update(this.entities, deltaTime);
             } catch (error) {
                 console.error('Error in system update:', error);
-                this.eventSystem.emit('gameloop:systemError', { system, error });
+                this.eventSystem.emit(GAMELOOP_EVENTS.SYSTEM_ERROR, { system, error });
             }
         }
 
-        this.eventSystem.emit('gameloop:fixedUpdateComplete', { deltaTime });
+        this.eventSystem.emit(GAMELOOP_EVENTS.FIXED_UPDATE_COMPLETE, { deltaTime });
     }
 
     /**
      * Variable timestep update for rendering and interpolation
      */
     private variableUpdate(deltaTime: number, alpha: number): void {
-        this.eventSystem.emit('gameloop:variableUpdate', { deltaTime, alpha });
+        this.eventSystem.emit(GAMELOOP_EVENTS.VARIABLE_UPDATE, { deltaTime, alpha });
 
         // This is where rendering and interpolation would happen
         // The alpha value can be used for smooth interpolation between physics states
 
-        this.eventSystem.emit('gameloop:render', { deltaTime, alpha });
-        this.eventSystem.emit('gameloop:variableUpdateComplete', { deltaTime, alpha });
+        this.eventSystem.emit(GAMELOOP_EVENTS.RENDER, { deltaTime, alpha });
+        this.eventSystem.emit(GAMELOOP_EVENTS.VARIABLE_UPDATE_COMPLETE, { deltaTime, alpha });
     }
 
     /**
@@ -217,7 +218,7 @@ export class GameLoop {
             this.frameCount = 0;
             this.fpsUpdateTime = currentTime;
 
-            this.eventSystem.emit('gameloop:fpsUpdate', {
+            this.eventSystem.emit(GAMELOOP_EVENTS.FPS_UPDATE, {
                 fps: this.currentFPS,
                 averageFrameTime: this.averageFrameTime
             });
@@ -229,7 +230,7 @@ export class GameLoop {
      */
     pause(): void {
         if (this.running) {
-            this.eventSystem.emit('gameloop:pause');
+            this.eventSystem.emit(GAMELOOP_EVENTS.PAUSE);
         }
     }
 
@@ -240,7 +241,7 @@ export class GameLoop {
         if (this.running) {
             this.lastTime = performance.now() / 1000;
             this.accumulator = 0;
-            this.eventSystem.emit('gameloop:resume');
+            this.eventSystem.emit(GAMELOOP_EVENTS.RESUME);
         }
     }
 
@@ -251,7 +252,7 @@ export class GameLoop {
         if (!this.running) {
             this.fixedUpdate(this.FIXED_TIMESTEP);
             this.eventSystem.processEvents();
-            this.eventSystem.emit('gameloop:step');
+            this.eventSystem.emit(GAMELOOP_EVENTS.STEP);
         }
     }
 
@@ -271,6 +272,6 @@ export class GameLoop {
         this.systems = [];
         this.entities = [];
 
-        this.eventSystem.emit('gameloop:destroy');
+        this.eventSystem.emit(GAMELOOP_EVENTS.DESTROY);
     }
 }
