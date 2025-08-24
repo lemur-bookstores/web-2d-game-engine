@@ -1,3 +1,4 @@
+import { INPUT_EVENTS } from '@/types/event-const';
 import { EventSystem } from '../core/EventSystem';
 import { Vector2 } from '../math/Vector2';
 
@@ -152,7 +153,7 @@ export class InputManager {
             };
 
             this.triggerKeyDownCallbacks(key, inputEvent);
-            this.eventSystem.emit('keyDown', { key, event: inputEvent });
+            this.eventSystem.emit(INPUT_EVENTS.KEYDOWN, { key, event: inputEvent });
         }
     }
 
@@ -174,7 +175,7 @@ export class InputManager {
             };
 
             this.triggerKeyUpCallbacks(key, inputEvent);
-            this.eventSystem.emit('keyUp', { key, event: inputEvent });
+            this.eventSystem.emit(INPUT_EVENTS.KEYUP, { key, event: inputEvent });
         }
     }
 
@@ -200,7 +201,7 @@ export class InputManager {
             };
 
             this.triggerMouseDownCallbacks(button, inputEvent);
-            this.eventSystem.emit('mouseDown', { button, event: inputEvent });
+            this.eventSystem.emit(INPUT_EVENTS.MOUSEDOWN, { button, event: inputEvent });
         }
     }
 
@@ -226,7 +227,7 @@ export class InputManager {
             };
 
             this.triggerMouseUpCallbacks(button, inputEvent);
-            this.eventSystem.emit('mouseUp', { button, event: inputEvent });
+            this.eventSystem.emit(INPUT_EVENTS.MOUSEUP, { button, event: inputEvent });
         }
     }
 
@@ -252,7 +253,7 @@ export class InputManager {
         };
 
         this.triggerMouseMoveCallbacks(inputEvent);
-        this.eventSystem.emit('mouseMove', { event: inputEvent });
+        this.eventSystem.emit(INPUT_EVENTS.MOUSEMOVE, { event: inputEvent });
     }
 
     private handleMouseWheel(event: WheelEvent): void {
@@ -260,7 +261,7 @@ export class InputManager {
         this.wheelDelta = event.deltaY;
 
         this.triggerMouseWheelCallbacks(this.wheelDelta);
-        this.eventSystem.emit('mouseWheel', { deltaY: this.wheelDelta });
+        this.eventSystem.emit(INPUT_EVENTS.MOUSEWHEEL, { deltaY: this.wheelDelta });
     }
 
     private handleTouchStart(event: globalThis.TouchEvent): void {
@@ -280,7 +281,7 @@ export class InputManager {
         };
 
         this.triggerTouchStartCallbacks(inputEvent);
-        this.eventSystem.emit('touchStart', { event: inputEvent });
+        this.eventSystem.emit(INPUT_EVENTS.TOUCHSTART, { event: inputEvent });
     }
 
     private handleTouchMove(event: globalThis.TouchEvent): void {
@@ -301,7 +302,7 @@ export class InputManager {
         };
 
         this.triggerTouchMoveCallbacks(inputEvent);
-        this.eventSystem.emit('touchMove', { event: inputEvent });
+        this.eventSystem.emit(INPUT_EVENTS.TOUCHMOVE, { event: inputEvent });
     }
 
     private handleTouchEnd(event: globalThis.TouchEvent): void {
@@ -325,7 +326,7 @@ export class InputManager {
         };
 
         this.triggerTouchEndCallbacks(inputEvent);
-        this.eventSystem.emit('touchEnd', { event: inputEvent });
+        this.eventSystem.emit(INPUT_EVENTS.TOUCHEND, { event: inputEvent });
     }
 
     private handleWindowBlur(): void {
