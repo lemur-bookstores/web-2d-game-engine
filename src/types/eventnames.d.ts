@@ -6,7 +6,8 @@ declare enum EventNames {
     ENGINE = 'ENGINE:',
     GAMELOOP = 'GAMELOOP:',
     PHYSICS = 'PHYSICS:',
-    ASSET = 'ASSET:'
+    ASSET = 'ASSET:',
+    ANIMATION = 'ANIMATION:'
 }
 
 // Utility type para crear eventos tipados
@@ -109,6 +110,11 @@ declare type PhysicsEvents = {
     COLLISION_POST_SOLVE: CreateEventType<EventNames.PHYSICS, 'COLLISION_POST_SOLVE'>,
 };
 
+declare type AnimationEvents = {
+    FRAME: CreateEventType<EventNames.ANIMATION, 'FRAME'>,
+    COMPLETE: CreateEventType<EventNames.ANIMATION, 'COMPLETE'>,
+};
+
 // Union type de todos los eventos disponibles
 declare type AllEventTypes =
     | WorldEvents[keyof WorldEvents]
@@ -117,4 +123,5 @@ declare type AllEventTypes =
     | EngineEvents[keyof EngineEvents]
     | GameLoopEvents[keyof GameLoopEvents]
     | PhysicsEvents[keyof PhysicsEvents]
+    | AnimationEvents[keyof AnimationEvents]
     | AssetEvents[keyof AssetEvents];
