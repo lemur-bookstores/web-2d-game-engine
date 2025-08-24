@@ -34,3 +34,10 @@ export interface PhysicsComponent extends Component {
     velocity: { x: number; y: number };
     angularVelocity: number;
 }
+
+export interface ColliderComponent extends Component {
+    type: 'collider';
+    width: number;
+    height: number;
+    isTrigger: boolean;
+}

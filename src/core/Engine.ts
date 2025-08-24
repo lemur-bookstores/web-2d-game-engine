@@ -6,6 +6,7 @@ import { RenderSystem } from '../graphics/RenderSystem';
 import { Canvas2DRenderer } from '../graphics/Canvas2DRenderer';
 import { WebGLRenderer } from '../graphics/WebGLRenderer';
 import { DiagnosticRenderer } from '../graphics/DiagnosticRenderer';
+import { ENGINE_EVENTS, GAMELOOP_EVENTS } from '@/types/event-const';
 
 /**
  * Main engine class that coordinates all game systems
@@ -49,7 +50,7 @@ export class Engine {
         }
 
         try {
-            this.eventSystem.emit('engine:initializing');
+            this.eventSystem.emit(ENGINE_EVENTS.INITIALIZING);
 
             // Resize canvas to match config
             this.resizeCanvas(this.config.width, this.config.height);
@@ -61,11 +62,11 @@ export class Engine {
             this.setupGameLoopEntityProvider();
 
             this.initialized = true;
-            this.eventSystem.emit('engine:initialized');
+            this.eventSystem.emit(ENGINE_EVENTS.INITIALIZED);
 
             this.debugLog('GameEngine 2D initialized successfully');
         } catch (error) {
-            this.eventSystem.emit('engine:initializationError', { error });
+            this.eventSystem.emit(ENGINE_EVENTS.INITIALIZATION_ERROR, { error });
             throw error;
         }
     }
@@ -82,7 +83,7 @@ export class Engine {
         this.totalFrames = 0;
 
         this.gameLoop.start();
-        this.eventSystem.emit('engine:started');
+        this.eventSystem.emit(ENGINE_EVENTS.STARTED);
 
         this.debugLog('GameEngine 2D started');
     }
@@ -92,7 +93,7 @@ export class Engine {
      */
     stop(): void {
         this.gameLoop.stop();
-        this.eventSystem.emit('engine:stopped');
+        this.eventSystem.emit(ENGINE_EVENTS.STOPPED);
 
         this.debugLog('GameEngine 2D stopped');
     }
@@ -102,7 +103,7 @@ export class Engine {
      */
     pause(): void {
         this.gameLoop.pause();
-        this.eventSystem.emit('engine:paused');
+        this.eventSystem.emit(ENGINE_EVENTS.PAUSED);
         this.debugLog('GameEngine 2D paused');
     }
 
@@ -111,7 +112,7 @@ export class Engine {
      */
     resume(): void {
         this.gameLoop.resume();
-        this.eventSystem.emit('engine:resumed');
+        this.eventSystem.emit(ENGINE_EVENTS.RESUMED);
         this.debugLog('GameEngine 2D resumed');
     }
 
@@ -120,7 +121,7 @@ export class Engine {
      */
     addSystem(system: System): void {
         this.gameLoop.addSystem(system);
-        this.eventSystem.emit('engine:systemAdded', { system });
+        this.eventSystem.emit(ENGINE_EVENTS.SYSTEM_ADDED, { system });
         this.debugLog('System added:', system.constructor.name);
     }
 
@@ -129,7 +130,7 @@ export class Engine {
      */
     removeSystem(system: System): void {
         this.gameLoop.removeSystem(system);
-        this.eventSystem.emit('engine:systemRemoved', { system });
+        this.eventSystem.emit(ENGINE_EVENTS.SYSTEM_REMOVED, { system });
         this.debugLog('System removed:', system.constructor.name);
     }
 
@@ -144,7 +145,7 @@ export class Engine {
         this.scenes.set(scene.name, scene);
         scene.initialize();
 
-        this.eventSystem.emit('engine:sceneAdded', { scene });
+        this.eventSystem.emit(ENGINE_EVENTS.SCENE_ADDED, { scene });
         this.debugLog('Scene added:', scene.name);
     }
 
@@ -165,7 +166,7 @@ export class Engine {
         scene.destroy();
         this.scenes.delete(sceneName);
 
-        this.eventSystem.emit('engine:sceneRemoved', { scene, sceneName });
+        this.eventSystem.emit(ENGINE_EVENTS.SCENE_REMOVED, { scene, sceneName });
         this.debugLog('Scene removed:', sceneName);
         return true;
     }
@@ -206,7 +207,7 @@ export class Engine {
             this.activeScene.onEnter();
         }
 
-        this.eventSystem.emit('engine:activeSceneChanged', {
+        this.eventSystem.emit(ENGINE_EVENTS.ACTIVE_SCENE_CHANGE, {
             previousScene: previousScene,
             newScene: this.activeScene
         });
@@ -243,6 +244,20 @@ export class Engine {
      */
     getConfig(): EngineConfig {
         return { ...this.config };
+    }
+
+    /**
+     * Get the engine configuration
+     */
+    getWidth(): number {
+        return this.config.width;
+    }
+
+    /**
+     * Get the engine configuration
+     */
+    getHeight(): number {
+        return this.config.height;
     }
 
     /**
@@ -304,7 +319,7 @@ export class Engine {
         this.config.width = width;
         this.config.height = height;
 
-        this.eventSystem.emit('engine:canvasResized', { width, height });
+        this.eventSystem.emit(ENGINE_EVENTS.CANVAS_RESIZED, { width, height });
         this.debugLog('Canvas resized to', `${width}x${height}`);
     }
 
@@ -325,7 +340,7 @@ export class Engine {
         this.gameLoop.destroy();
 
         this.initialized = false;
-        this.eventSystem.emit('engine:destroyed');
+        this.eventSystem.emit(ENGINE_EVENTS.DESTROYED);
 
         this.debugLog('GameEngine 2D destroyed');
     }
@@ -439,13 +454,13 @@ export class Engine {
      */
     private setupEventListeners(): void {
         // Listen to game loop events to update frame counter
-        this.eventSystem.on('gameloop:fixedUpdate', () => {
+        this.eventSystem.on(GAMELOOP_EVENTS.FIXED_UPDATE, () => {
             this.totalFrames++;
         });
 
         // Handle window resize if canvas should be responsive
         window.addEventListener('resize', () => {
-            this.eventSystem.emit('engine:windowResized', {
+            this.eventSystem.emit(ENGINE_EVENTS.WINDOW_RESIZED, {
                 width: window.innerWidth,
                 height: window.innerHeight
             });
@@ -454,9 +469,9 @@ export class Engine {
         // Handle visibility changes
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                this.eventSystem.emit('engine:windowHidden');
+                this.eventSystem.emit(ENGINE_EVENTS.WINDOW_HIDDEN);
             } else {
-                this.eventSystem.emit('engine:windowVisible');
+                this.eventSystem.emit(ENGINE_EVENTS.WINDOW_VISIBLE);
             }
         });
     }
@@ -466,7 +481,7 @@ export class Engine {
      */
     private setupGameLoopEntityProvider(): void {
         // Update the game loop with active scene entities each frame
-        this.eventSystem.on('gameloop:fixedUpdate', () => {
+        this.eventSystem.on(GAMELOOP_EVENTS.FIXED_UPDATE, () => {
             if (this.activeScene) {
                 const entities = this.activeScene.getActiveEntities();
                 this.gameLoop.setEntities(entities);

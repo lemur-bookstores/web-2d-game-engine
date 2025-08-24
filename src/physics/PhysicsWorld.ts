@@ -2,6 +2,8 @@ import { Box2DFactory, Box2D, World, Vec2 } from 'box2d-wasm';
 import { Vector2 } from '../math/Vector2';
 import { EventSystem } from '../core/EventSystem';
 import { PhysicsBody } from './PhysicsBody';
+import { PHYSICS_EVENTS } from '@/types/event-const';
+
 
 export type PhysicsCollisionEvent = {
     bodyA: PhysicsBody;
@@ -79,7 +81,7 @@ export class PhysicsWorld {
             const point = this.fromB2Vec2(worldManifold.points[0]);
             const normal = this.fromB2Vec2(worldManifold.normal);
 
-            this.eventSystem.emit('collisionBegin', {
+            this.eventSystem.emit(PHYSICS_EVENTS.COLLISION_BEGIN, {
                 bodyA,
                 bodyB,
                 point,
@@ -92,7 +94,7 @@ export class PhysicsWorld {
             const bodyA = contact.GetFixtureA().GetBody().GetUserData();
             const bodyB = contact.GetFixtureB().GetBody().GetUserData();
 
-            this.eventSystem.emit('collisionEnd', {
+            this.eventSystem.emit(PHYSICS_EVENTS.COLLISION_END, {
                 bodyA,
                 bodyB
             });
@@ -109,7 +111,7 @@ export class PhysicsWorld {
             const point = this.fromB2Vec2(worldManifold.points[0]);
             const normal = this.fromB2Vec2(worldManifold.normal);
 
-            this.eventSystem.emit('collisionPostSolve', {
+            this.eventSystem.emit(PHYSICS_EVENTS.COLLISION_POST_SOLVE, {
                 bodyA,
                 bodyB,
                 point,

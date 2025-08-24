@@ -2,6 +2,7 @@ import { System } from '../core/ecs/System';
 import { Entity } from '../core/ecs/Entity';
 import { InputManager } from './InputManager';
 import { Transform } from '../math/Transform';
+import { INPUT_EVENTS } from '@/types/event-const';
 
 export interface InputComponent {
     type: 'input';
@@ -82,7 +83,7 @@ export class InputSystem extends System {
                 break;
             default:
                 // Emit custom action event for game-specific handling
-                this.inputManager['eventSystem'].emit('inputAction', {
+                this.inputManager['eventSystem'].emit(INPUT_EVENTS.ACTION, {
                     entity: entity.getId(),
                     action,
                     deltaTime
@@ -107,18 +108,18 @@ export class InputSystem extends System {
 
         // Handle mouse button clicks
         if (this.inputManager.isMouseButtonJustPressed(0)) { // Left click
-            this.inputManager['eventSystem'].emit('inputAction', {
+            this.inputManager['eventSystem'].emit(INPUT_EVENTS.ACTION, {
                 entity: entity.getId(),
-                action: 'primaryAction',
+                action: INPUT_EVENTS.MOUSE_PRIMARY_ACTION,
                 position: mousePosition,
                 deltaTime
             });
         }
 
         if (this.inputManager.isMouseButtonJustPressed(2)) { // Right click
-            this.inputManager['eventSystem'].emit('inputAction', {
+            this.inputManager['eventSystem'].emit(INPUT_EVENTS.ACTION, {
                 entity: entity.getId(),
-                action: 'secondaryAction',
+                action: INPUT_EVENTS.MOUSE_SECONDARY_ACTION,
                 position: mousePosition,
                 deltaTime
             });
@@ -148,7 +149,7 @@ export class InputSystem extends System {
             }
 
             // Emit touch events
-            this.inputManager['eventSystem'].emit('inputAction', {
+            this.inputManager['eventSystem'].emit(INPUT_EVENTS.ACTION, {
                 entity: entity.getId(),
                 action: 'touchMove',
                 position: touch.position,

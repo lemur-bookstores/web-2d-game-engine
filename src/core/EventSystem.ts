@@ -5,7 +5,7 @@ import { GameEvent, EventCallback } from '../types';
  */
 export class EventSystem {
     private static instance: EventSystem;
-    private listeners = new Map<string, EventCallback[]>();
+    private listeners = new Map<AllEventTypes, EventCallback<any>[]>();
     private eventQueue: GameEvent[] = [];
     private isProcessing = false;
 
@@ -24,7 +24,8 @@ export class EventSystem {
     /**
      * Emit an event to be processed
      */
-    emit(type: string, data: any = null): void {
+    emit<T>(type: AllEventTypes & T, data: any = null): void {
+        // console.log(`[EventSystem] Emitting event: ${type}`, data);
         const event: GameEvent = {
             type,
             data,
@@ -42,7 +43,7 @@ export class EventSystem {
     /**
      * Register an event listener
      */
-    on(type: string, callback: EventCallback): void {
+    on<T = any>(type: AllEventTypes, callback: EventCallback<T>): void {
         if (!this.listeners.has(type)) {
             this.listeners.set(type, []);
         }
@@ -52,8 +53,8 @@ export class EventSystem {
     /**
      * Register a one-time event listener
      */
-    once(type: string, callback: EventCallback): void {
-        const wrappedCallback: EventCallback = (event: GameEvent) => {
+    once<T = any>(type: AllEventTypes, callback: EventCallback<T>): void {
+        const wrappedCallback: EventCallback<T> = (event: GameEvent<T>) => {
             callback(event);
             this.off(type, wrappedCallback);
         };
@@ -63,7 +64,7 @@ export class EventSystem {
     /**
      * Remove an event listener
      */
-    off(type: string, callback: EventCallback): void {
+    off<T = any>(type: AllEventTypes, callback: EventCallback<T>): void {
         const callbacks = this.listeners.get(type);
         if (callbacks) {
             const index = callbacks.indexOf(callback);
@@ -76,7 +77,7 @@ export class EventSystem {
     /**
      * Remove all listeners for a specific event type
      */
-    removeAllListeners(type?: string): void {
+    removeAllListeners(type?: AllEventTypes): void {
         if (type) {
             this.listeners.delete(type);
         } else {
@@ -87,7 +88,7 @@ export class EventSystem {
     /**
      * Check if there are any listeners for an event type
      */
-    hasListeners(type: string): boolean {
+    hasListeners(type: AllEventTypes): boolean {
         const callbacks = this.listeners.get(type);
         return callbacks !== undefined && callbacks.length > 0;
     }
@@ -95,7 +96,7 @@ export class EventSystem {
     /**
      * Get the number of listeners for an event type
      */
-    listenerCount(type: string): number {
+    listenerCount(type: AllEventTypes): number {
         const callbacks = this.listeners.get(type);
         return callbacks ? callbacks.length : 0;
     }
@@ -147,7 +148,7 @@ export class EventSystem {
     /**
      * Emit an event immediately without queuing (use with caution)
      */
-    emitImmediate(type: string, data: any = null): void {
+    emitImmediate(type: AllEventTypes, data: any = null): void {
         const event: GameEvent = {
             type,
             data,

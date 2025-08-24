@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brick Breaker - Web 2D Game Engine</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            border: 2px solid #444;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #gameInfo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="gameInfo">
+        <div>Puntuación: <span id="score">0</span></div>
+        <div>Vidas: <span id="lives">3</span></div>
+    </div>
+    <div id="controls">
+        <p>Controles: Mueve el ratón o usa las flechas izquierda/derecha para mover la paleta</p>
+        <p>Pulsa Espacio para lanzar la bola</p>
+    </div>
+
+    <script type="module" src="./index.ts"></script>
+</body>
+</html>

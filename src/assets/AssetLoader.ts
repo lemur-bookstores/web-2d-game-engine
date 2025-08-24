@@ -1,10 +1,12 @@
 import { Texture } from '../graphics';
 import { EventSystem } from '../core/EventSystem';
+import { ASSET_EVENTS } from '@/types/event-const';
 
 export type AssetType = 'texture' | 'audio' | 'json' | 'text' | 'spritesheet';
 
+// Adjusted AssetLoadEvent type to match ASSET_EVENTS
 export interface AssetLoadEvent {
-    type: 'assetLoaded' | 'assetError' | 'assetProgress';
+    type: typeof ASSET_EVENTS[keyof typeof ASSET_EVENTS];
     asset: string;
     assetType: AssetType;
     progress?: number;
@@ -119,8 +121,8 @@ export class AssetLoader {
     private assetLoaded(path: string, type: AssetType): void {
         this.loadedAssets++;
         this.updateProgress();
-        this.eventSystem.emit('assetLoaded', {
-            type: 'assetLoaded',
+        this.eventSystem.emit(ASSET_EVENTS.LOADED, {
+            type: ASSET_EVENTS.LOADED,
             asset: path,
             assetType: type
         } as AssetLoadEvent);
@@ -129,8 +131,8 @@ export class AssetLoader {
     private assetError(path: string, type: AssetType, error: Error): void {
         this.loadedAssets++;
         this.updateProgress();
-        this.eventSystem.emit('assetError', {
-            type: 'assetError',
+        this.eventSystem.emit(ASSET_EVENTS.ERROR, {
+            type: ASSET_EVENTS.ERROR,
             asset: path,
             assetType: type,
             error
@@ -139,8 +141,8 @@ export class AssetLoader {
 
     private updateProgress(): void {
         const progress = this.totalAssets > 0 ? this.loadedAssets / this.totalAssets : 1;
-        this.eventSystem.emit('assetProgress', {
-            type: 'assetProgress',
+        this.eventSystem.emit(ASSET_EVENTS.PROGRESS, {
+            type: ASSET_EVENTS.PROGRESS,
             asset: '',
             assetType: 'text',
             progress

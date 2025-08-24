@@ -1,6 +1,7 @@
 import { Entity } from './Entity';
 import { System } from './System';
 import { EventSystem } from '../core/EventSystem';
+import { WORLD_EVENTS } from '@/types/event-const';
 
 export class World {
     private entities: Map<string, Entity>;
@@ -16,7 +17,7 @@ export class World {
     createEntity(): Entity {
         const entity = new Entity();
         this.entities.set(entity.id, entity);
-        this.eventSystem.emit('entityCreated', { entity });
+        this.eventSystem.emit(WORLD_EVENTS.ENTITY_CREATED, { entity });
         return entity;
     }
 
@@ -25,7 +26,7 @@ export class World {
         if (entity) {
             entity.destroy();
             this.entities.delete(entityId);
-            this.eventSystem.emit('entityDestroyed', { entityId });
+            this.eventSystem.emit(WORLD_EVENTS.ENTITY_DESTROYED, { entityId });
         }
     }
 
@@ -60,14 +61,14 @@ export class World {
     clear(): void {
         this.entities.clear();
         this.systems = [];
-        this.eventSystem.emit('worldCleared', {});
+        this.eventSystem.emit(WORLD_EVENTS.WORLD_CLEARED, {});
     }
 
-    on(eventName: string, callback: Function): void {
+    on(eventName: AllEventTypes, callback: Function): void {
         this.eventSystem.on(eventName, callback as any);
     }
 
-    off(eventName: string, callback: Function): void {
+    off(eventName: AllEventTypes, callback: Function): void {
         this.eventSystem.off(eventName, callback as any);
     }
 }
