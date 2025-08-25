@@ -416,6 +416,7 @@ Para más detalles, explora:
 - [ ] **v0.3.0 - Animaciones y Audio**
 
   - Sistema de animaciones con sprites
+  - Máquina de estado para animaciones (Animation State Machine / FSM) para controlar transiciones, triggers y blending entre estados
   - Web Audio API integrado
   - Efectos de sonido y música de fondo
 
@@ -430,7 +431,12 @@ Para más detalles, explora:
   - Sistema de capas para organizar elementos por profundidad
   - Camera2D con viewport, zoom y seguimiento de entidades
   - Efectos de cámara (shake, smooth follow, transitions)
-  - Culling automático fuera del viewport
+  - Culling y estrategias de renderizado optimizadas: en lugar de un "culling automático" rígido, implementar una estrategia combinada que reduzca el coste y evite artefactos visuales:
+    - Culling por viewport con margen (loose-frustum) para evitar popping en bordes.
+    - Soporte opcional de particionado espacial (quadtree/grid) para limitar tests por frame.
+    - Culling por capas y LOD por distancia para reducir trabajo en objetos lejanos.
+    - Flags por entidad (por ejemplo `alwaysRender`, `cullingRadius`) para excepciones controladas.
+    - Batch de tests y actualizaciones perezosas (lazy updates) para minimizar sobrecarga en frames con muchos objetos.
 
 - [ ] **v0.6.0 - Herramientas**
   - Editor de niveles web
