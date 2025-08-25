@@ -50,3 +50,12 @@ export interface TransformData {
 export type SystemUpdateFunction = <T>(entities: T[], deltaTime: number) => void;
 export type ComponentType = string;
 export type EntityId = string;
+
+export interface AudioComponent {
+    type: 'audio';
+    clip: string; // key in AssetManager or path
+    loop?: boolean;
+    volume?: number; // 0..1
+    group?: string; // e.g., 'sfx' | 'music'
+    autoplay?: boolean;
+}

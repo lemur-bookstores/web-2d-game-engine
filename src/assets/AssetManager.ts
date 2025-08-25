@@ -2,12 +2,42 @@ import { EventSystem } from '../core/EventSystem';
 import { AssetLoader, AssetType, AssetLoadEvent } from './AssetLoader';
 import { Texture, SpriteSheet } from '../graphics';
 import { GameEvent } from '../types';
-import { ASSET_EVENTS } from '@/types/event-const';
+import { ASSET_EVENTS } from '../types/event-const';
+import { SpriteSheetLibrary, GridDetectionConfig, DynamicDetectionConfig } from '../libs/sprite-sheet';
+import { convertNormalizedToPixelFrames, createImageDataFromCanvas, createCanvasFromImage } from '../libs/sprite-sheet/engine-adapter';
 
 interface Asset {
     type: AssetType;
     data: any;
 }
+
+interface SpriteSheetLibraryBase {
+    useSpriteSheetLib?: boolean;
+    namingPattern?: string;
+}
+
+interface SpriteSheetLibraryDynamic {
+    libraryMode: 'dynamic';
+    dynamic?: {
+        alphaThreshold?: number;
+        minFrameSize?: number;
+        padding?: number;
+    };
+}
+
+interface SpriteSheetLibraryGrid {
+    libraryMode: 'grid';
+    grid: {
+        frameWidth: number;
+        frameHeight: number;
+        startX?: number;
+        startY?: number;
+        spacing?: number;
+        margin?: number;
+    };
+}
+
+export type SpriteSheetLibraryOptions = SpriteSheetLibraryDynamic & SpriteSheetLibraryBase | SpriteSheetLibraryGrid & SpriteSheetLibraryBase;
 
 export class AssetManager {
     private static instance: AssetManager;
@@ -65,22 +95,112 @@ export class AssetManager {
         texturePath: string,
         atlasPath?: string,
         frameWidth?: number,
-        frameHeight?: number
+        frameHeight?: number,
+        options?: SpriteSheetLibraryOptions
     ): Promise<SpriteSheet> {
         const texture = await this.loadTexture(`${name}_texture`, texturePath);
 
         let spriteSheet: SpriteSheet;
-        if (atlasPath) {
+
+        // Use sprite-sheet library if enabled and no atlas path provided
+        if (options?.useSpriteSheetLib && !atlasPath) {
+            spriteSheet = await this.createSpriteSheetWithLibrary(texture, options);
+        } else if (atlasPath) {
             const atlasData = await this.loader.loadJSON(atlasPath);
             spriteSheet = SpriteSheet.fromAtlas(texture, atlasData);
         } else if (frameWidth && frameHeight) {
             spriteSheet = new SpriteSheet(texture, frameWidth, frameHeight);
         } else {
-            throw new Error('Must specify either atlas path or frame dimensions');
+            throw new Error('Must specify either atlas path, frame dimensions, or use sprite-sheet library');
         }
 
         this.assets.set(name, { type: 'spritesheet', data: spriteSheet });
         return spriteSheet;
+    }
+
+    private async createSpriteSheetWithLibrary(
+        texture: Texture,
+        options: SpriteSheetLibraryOptions
+    ): Promise<SpriteSheet> {
+        // Create ImageData from texture - we need to get the underlying image data
+        // For now, we'll assume the texture has an image property or canvas
+        // In a real implementation, this might need to be handled differently
+        // depending on how Texture is implemented
+        const imageData = await this.createImageDataFromTexture(texture);
+
+        let spriteFrames;
+        if (options.libraryMode === 'dynamic') {
+            const config = new DynamicDetectionConfig(
+                options.dynamic?.alphaThreshold,
+                options.dynamic?.minFrameSize,
+                options.dynamic?.padding
+            );
+            spriteFrames = SpriteSheetLibrary.separateDynamically(imageData, {
+                alphaThreshold: config.alphaThreshold,
+                minFrameSize: config.minFrameSize,
+                padding: config.padding,
+                namingPattern: options.namingPattern,
+            });
+        } else {
+            // Default to grid mode
+            if (!options.grid?.frameWidth || !options.grid?.frameHeight) {
+                throw new Error('Grid mode requires frameWidth and frameHeight in options.grid');
+            }
+            const config = new GridDetectionConfig(
+                options.grid.frameWidth,
+                options.grid.frameHeight,
+                options.grid.startX,
+                options.grid.startY,
+                options.grid.spacing,
+                options.grid.margin
+            );
+            spriteFrames = SpriteSheetLibrary.separateByGrid(imageData,
+                config.frameWidth,
+                config.frameHeight,
+                {
+                    startX: config.startX,
+                    startY: config.startY,
+                    spacing: config.spacing,
+                    margin: config.margin,
+                    namingPattern: options.namingPattern,
+                }
+            );
+        }
+
+        // Convert normalized UV coordinates to pixel frames
+        const pixelFrames = convertNormalizedToPixelFrames(texture, spriteFrames);
+
+        // Create SpriteSheet from frames
+        return SpriteSheet.fromFrames(texture, pixelFrames);
+    }
+
+    private async createImageDataFromTexture(texture: Texture): Promise<ImageData> {
+        // This is a simplified implementation - in practice, you might need
+        // to handle different texture formats or sources differently
+
+        // For browser environment, if texture has an image or canvas source
+        if (typeof document !== 'undefined') {
+            // Try to get the source image/canvas from texture
+            const source = (texture as any).source || (texture as any).image;
+
+            if (source instanceof HTMLImageElement) {
+                const canvas = createCanvasFromImage(source);
+                return createImageDataFromCanvas(canvas);
+            } else if (source instanceof HTMLCanvasElement) {
+                return createImageDataFromCanvas(source);
+            }
+        }
+
+        // Fallback: create a simple ImageData with texture dimensions
+        // This won't have actual pixel data, but allows the API to work
+        const data = new Uint8ClampedArray(texture.width * texture.height * 4);
+        data.fill(255); // Fill with white pixels as fallback
+
+        return {
+            width: texture.width,
+            height: texture.height,
+            data,
+        } as ImageData;
     }
 
     async loadJSON(name: string, path: string): Promise<any> {

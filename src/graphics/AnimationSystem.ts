@@ -3,13 +3,20 @@ import { Entity } from '../ecs/Entity';
 import { AnimationComponent } from './Animation';
 import { SpriteComponent } from './Sprite';
 import { SpriteSheet, Animation } from './SpriteSheet';
+import { AssetManager } from '../assets/AssetManager';
+import { EventSystem } from '../core/EventSystem';
+import { ANIMATION_EVENTS } from '../types/event-const';
 
 export class AnimationSystem extends System {
     requiredComponents = ['animation', 'sprite'];
     private spriteSheets = new Map<string, SpriteSheet>();
+    private assetManager: AssetManager | null = null;
+    private eventSystem?: EventSystem;
 
-    constructor() {
+    constructor(assetManager?: AssetManager) {
         super();
+        if (assetManager) this.assetManager = assetManager;
+        this.eventSystem = EventSystem.getInstance();
     }
 
     registerSpriteSheet(name: string, spriteSheet: SpriteSheet): void {
@@ -41,27 +48,51 @@ export class AnimationSystem extends System {
 
         if (!animComponent || !spriteComponent || !animComponent.playing) return;
 
-        const spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
+        let spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
+
+        // If not registered manually, try to resolve via AssetManager
+        if (!spriteSheet && this.assetManager) {
+            const ss = this.assetManager.getSpriteSheet(animComponent.spriteSheet);
+            if (ss) {
+                this.registerSpriteSheet(animComponent.spriteSheet, ss);
+                spriteSheet = ss;
+            }
+        }
+
         if (!spriteSheet) return;
 
-        const currentAnim = spriteSheet.getAnimation(animComponent.currentAnimation);
+        // Get animation from the component, not from the spriteSheet
+        const currentAnim = animComponent.animations.get(animComponent.currentAnimation);
         if (!currentAnim) return;
 
         // Actualizar tiempo transcurrido
         animComponent.elapsedTime += deltaTime;
 
         // Cambiar frame si es necesario
+        let frameChanged = false;
         if (animComponent.elapsedTime >= animComponent.frameTime) {
+            const prevFrame = animComponent.currentFrame;
             const animationComplete = this.nextFrame(animComponent, currentAnim);
             animComponent.elapsedTime = 0;
 
             if (animationComplete) {
                 this.onAnimationComplete(entity, currentAnim.name);
             }
+
+            frameChanged = animComponent.currentFrame !== prevFrame;
         }
 
-        // Actualizar UV coordinates del sprite
+        // Actualizar UV coordinates del sprite usando el nuevo método getSpriteFrameUV
         this.updateSpriteUV(spriteComponent, spriteSheet, animComponent, currentAnim);
+
+        // Emit FRAME event if frame changed
+        if (frameChanged && this.eventSystem) {
+            this.eventSystem.emit(ANIMATION_EVENTS.FRAME, {
+                entity,
+                animationName: animComponent.currentAnimation,
+                frameIndex: animComponent.currentFrame,
+            });
+        }
     }
 
     private nextFrame(animComponent: AnimationComponent, animation: Animation): boolean {
@@ -120,22 +151,24 @@ export class AnimationSystem extends System {
         animation: Animation
     ): void {
         const frameIndex = animation.frames[animComponent.currentFrame];
-        const frame = spriteSheet.getFrame(frameIndex);
+        const spriteFrameUV = spriteSheet.getSpriteFrameUV(frameIndex);
 
-        if (frame) {
-            sprite.uvX = frame.x;
-            sprite.uvY = frame.y;
-            sprite.uvWidth = frame.width;
-            sprite.uvHeight = frame.height;
-            sprite.width = frame.width;
-            sprite.height = frame.height;
+        if (spriteFrameUV) {
+            // Use the new getSpriteFrameUV method for properly formatted coordinates
+            sprite.uvX = spriteFrameUV.uv.uvX;
+            sprite.uvY = spriteFrameUV.uv.uvY;
+            sprite.uvWidth = spriteFrameUV.uv.uvWidth;
+            sprite.uvHeight = spriteFrameUV.uv.uvHeight;
+            sprite.width = spriteFrameUV.size.width;
+            sprite.height = spriteFrameUV.size.height;
         }
     }
 
     private onAnimationComplete(entity: Entity, animationName: string): void {
         // Emit animation complete event
-        // This would integrate with the event system when available
-        console.log(`Animation '${animationName}' completed for entity ${entity.id}`);
+        if (this.eventSystem) {
+            this.eventSystem.emit(ANIMATION_EVENTS.COMPLETE, { entity, animationName });
+        }
     }
 
     // Public methods for animation control
@@ -143,8 +176,8 @@ export class AnimationSystem extends System {
         const animComponent = entity.getComponent<AnimationComponent>('animation');
         if (!animComponent) return false;
 
-        const spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
-        if (!spriteSheet || !spriteSheet.getAnimation(animationName)) return false;
+        // Check animation exists in the component, not in the spriteSheet
+        if (!animComponent.animations.has(animationName)) return false;
 
         animComponent.currentAnimation = animationName;
         animComponent.currentFrame = 0;
@@ -207,10 +240,7 @@ export class AnimationSystem extends System {
         const animComponent = entity.getComponent<AnimationComponent>('animation');
         if (!animComponent) return 0;
 
-        const spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
-        if (!spriteSheet) return 0;
-
-        const animation = spriteSheet.getAnimation(animComponent.currentAnimation);
+        const animation = animComponent.animations.get(animComponent.currentAnimation);
         if (!animation) return 0;
 
         return animComponent.currentFrame / (animation.frames.length - 1);
