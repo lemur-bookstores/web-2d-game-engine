@@ -104,20 +104,46 @@ class PlatformerGame {
     }
 
     async loadAssets() {
-        // Load spritesheets and textures
+        // Load spritesheets using the new sprite-sheet library for automatic frame detection
         await this.assetManager.loadSpriteSheet(
             'ninja',
             'assets/sprite-sheet-ninja.png',
             undefined,
-            32,
-            32
+            undefined,
+            undefined,
+            {
+                useSpriteSheetLib: true,
+                libraryMode: 'grid',
+                grid: {
+                    frameWidth: 45,
+                    frameHeight: 64,
+                    startX: 0,
+                    startY: 0,
+                    spacing: 0,
+                    margin: 0
+                },
+                namingPattern: 'frame_{index}'
+            }
         );
         await this.assetManager.loadSpriteSheet(
             'platform',
             'assets/sprite-sheet-plataforma.png',
             undefined,
-            32,
-            32
+            undefined,
+            undefined,
+            {
+                useSpriteSheetLib: true,
+                libraryMode: 'grid',
+                grid: {
+                    frameWidth: 53,
+                    frameHeight: 53,
+                    startX: 0,
+                    startY: 0,
+                    spacing: 0,
+                    margin: 0
+                },
+                namingPattern: 'tile_{index}'
+            }
         );
         // Optionally load audio assets here
         // await this.audioManager.loadAudio('jump', 'assets/jump.mp3');
@@ -147,7 +173,7 @@ class PlatformerGame {
 // World/platform class
 class PlatformWorld {
     constructor(scene: Scene) {
-        // Add ground/platform entities using platform spritesheet
+        // Add ground/platform entities using platform spritesheet with automatic frame detection
         for (let i = 0; i < 25; i++) {
             const ground = new Entity();
             ground.addComponent({
@@ -156,18 +182,40 @@ class PlatformWorld {
                 rotation: 0,
                 scale: { x: 1, y: 1 }
             });
-            ground.addComponent({
-                type: 'sprite',
-                texture: 'platform',
-                width: 53,
-                height: 53,
-                uvX: 0.4,
-                uvY: 0.3,
-                uvWidth: 53 / 321, // ancho frame / ancho sheet
-                uvHeight: 53 / 258, // alto frame / alto sheet
-                flipX: false,
-                flipY: false
-            });
+
+            // Use a specific tile frame from the automatically detected frames
+            const platformSpriteSheet = AssetManager.getInstance().getSpriteSheet('platform');
+            const tileFrame = platformSpriteSheet?.getFrame(6); // Use frame 6 as ground
+            const texture = platformSpriteSheet?.getTexture();
+
+            if (tileFrame && texture) {
+                ground.addComponent({
+                    type: 'sprite',
+                    texture: 'platform',
+                    width: tileFrame.width,
+                    height: tileFrame.height,
+                    uvX: tileFrame.x / texture.width,
+                    uvY: tileFrame.y / texture.height,
+                    uvWidth: tileFrame.width / texture.width,
+                    uvHeight: tileFrame.height / texture.height,
+                    flipX: false,
+                    flipY: false
+                });
+            } else {
+                // Fallback to manual UV coordinates
+                ground.addComponent({
+                    type: 'sprite',
+                    texture: 'platform',
+                    width: 53,
+                    height: 53,
+                    uvX: 0.4,
+                    uvY: 0.3,
+                    uvWidth: 53 / 321,
+                    uvHeight: 53 / 258,
+                    flipX: false,
+                    flipY: false
+                });
+            }
             scene.addEntity(ground);
         }
     }
@@ -184,19 +232,42 @@ class Player {
             rotation: 0,
             scale: { x: 1, y: 1 }
         });
-        this.entity.addComponent({
-            type: 'sprite',
-            texture: 'ninja',
-            width: 45,
-            height: 64,
-            uvX: 0.05,
-            uvY: 0.05,
-            uvWidth: 45 / 600, // ancho frame / ancho sheet
-            uvHeight: 64 / 371, // alto frame / alto sheet
-            flipX: false,
-            flipY: false
-        });
-        // Definir animaciones del sprite-sheet ninja
+
+        // Get the automatically generated frames from ninja sprite sheet
+        const ninjaSpriteSheet = AssetManager.getInstance().getSpriteSheet('ninja');
+        const firstFrame = ninjaSpriteSheet?.getFrame(0);
+        const texture = ninjaSpriteSheet?.getTexture();
+
+        if (firstFrame && texture) {
+            this.entity.addComponent({
+                type: 'sprite',
+                texture: 'ninja',
+                width: firstFrame.width,
+                height: firstFrame.height,
+                uvX: firstFrame.x / texture.width,
+                uvY: firstFrame.y / texture.height,
+                uvWidth: firstFrame.width / texture.width,
+                uvHeight: firstFrame.height / texture.height,
+                flipX: false,
+                flipY: false
+            });
+        } else {
+            // Fallback sprite component
+            this.entity.addComponent({
+                type: 'sprite',
+                texture: 'ninja',
+                width: 45,
+                height: 64,
+                uvX: 0.05,
+                uvY: 0.05,
+                uvWidth: 45 / 600,
+                uvHeight: 64 / 371,
+                flipX: false,
+                flipY: false
+            });
+        }
+
+        // Define animations using the automatically detected frames
         const animations = new Map<string, any>();
         // Idle (frames 0-3)
         animations.set('idle', {
