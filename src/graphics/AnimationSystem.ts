@@ -61,7 +61,8 @@ export class AnimationSystem extends System {
 
         if (!spriteSheet) return;
 
-        const currentAnim = spriteSheet.getAnimation(animComponent.currentAnimation);
+        // Get animation from the component, not from the spriteSheet
+        const currentAnim = animComponent.animations.get(animComponent.currentAnimation);
         if (!currentAnim) return;
 
         // Actualizar tiempo transcurrido
@@ -81,7 +82,7 @@ export class AnimationSystem extends System {
             frameChanged = animComponent.currentFrame !== prevFrame;
         }
 
-        // Actualizar UV coordinates del sprite
+        // Actualizar UV coordinates del sprite usando el nuevo método getSpriteFrameUV
         this.updateSpriteUV(spriteComponent, spriteSheet, animComponent, currentAnim);
 
         // Emit FRAME event if frame changed
@@ -150,15 +151,16 @@ export class AnimationSystem extends System {
         animation: Animation
     ): void {
         const frameIndex = animation.frames[animComponent.currentFrame];
-        const frame = spriteSheet.getFrame(frameIndex);
+        const spriteFrameUV = spriteSheet.getSpriteFrameUV(frameIndex);
 
-        if (frame) {
-            sprite.uvX = frame.x;
-            sprite.uvY = frame.y;
-            sprite.uvWidth = frame.width;
-            sprite.uvHeight = frame.height;
-            sprite.width = frame.width;
-            sprite.height = frame.height;
+        if (spriteFrameUV) {
+            // Use the new getSpriteFrameUV method for properly formatted coordinates
+            sprite.uvX = spriteFrameUV.uv.uvX;
+            sprite.uvY = spriteFrameUV.uv.uvY;
+            sprite.uvWidth = spriteFrameUV.uv.uvWidth;
+            sprite.uvHeight = spriteFrameUV.uv.uvHeight;
+            sprite.width = spriteFrameUV.size.width;
+            sprite.height = spriteFrameUV.size.height;
         }
     }
 
@@ -174,8 +176,8 @@ export class AnimationSystem extends System {
         const animComponent = entity.getComponent<AnimationComponent>('animation');
         if (!animComponent) return false;
 
-        const spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
-        if (!spriteSheet || !spriteSheet.getAnimation(animationName)) return false;
+        // Check animation exists in the component, not in the spriteSheet
+        if (!animComponent.animations.has(animationName)) return false;
 
         animComponent.currentAnimation = animationName;
         animComponent.currentFrame = 0;
@@ -238,10 +240,7 @@ export class AnimationSystem extends System {
         const animComponent = entity.getComponent<AnimationComponent>('animation');
         if (!animComponent) return 0;
 
-        const spriteSheet = this.spriteSheets.get(animComponent.spriteSheet);
-        if (!spriteSheet) return 0;
-
-        const animation = spriteSheet.getAnimation(animComponent.currentAnimation);
+        const animation = animComponent.animations.get(animComponent.currentAnimation);
         if (!animation) return 0;
 
         return animComponent.currentFrame / (animation.frames.length - 1);

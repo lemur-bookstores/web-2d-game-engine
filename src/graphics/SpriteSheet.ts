@@ -15,6 +15,19 @@ export interface Animation {
     pingPong: boolean;
 }
 
+export interface SpriteFrameUV {
+    size: {
+        width: number,
+        height: number,
+    }
+    uv: {
+        uvX: number,
+        uvY: number,
+        uvWidth: number,
+        uvHeight: number,
+    }
+}
+
 export class SpriteSheet {
     private texture: Texture;
     private frames: SpriteFrame[] = [];
@@ -108,5 +121,25 @@ export class SpriteSheet {
         this.texture.dispose();
         this.frames = [];
         this.animations.clear();
+    }
+
+    getSpriteFrameUV(index: number): SpriteFrameUV | undefined {
+        const frame = this.getFrame(index);
+        const texture = this.getTexture();
+
+        if (!frame) return undefined;
+
+        return {
+            size: {
+                width: frame.width,
+                height: frame.height,
+            },
+            uv: {
+                uvX: frame.x / texture.width,
+                uvY: frame.y / texture.height,
+                uvWidth: frame.width / texture.width,
+                uvHeight: frame.height / texture.height,
+            }
+        };
     }
 }

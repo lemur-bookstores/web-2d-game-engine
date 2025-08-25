@@ -113,14 +113,11 @@ class PlatformerGame {
             undefined,
             {
                 useSpriteSheetLib: true,
-                libraryMode: 'grid',
-                grid: {
-                    frameWidth: 45,
-                    frameHeight: 64,
-                    startX: 0,
-                    startY: 0,
-                    spacing: 0,
-                    margin: 0
+                libraryMode: 'dynamic',
+                dynamic: {
+                    // alphaThreshold: 128,
+                    minFrameSize: 10,
+                    padding: 1
                 },
                 namingPattern: 'frame_{index}'
             }
@@ -133,14 +130,11 @@ class PlatformerGame {
             undefined,
             {
                 useSpriteSheetLib: true,
-                libraryMode: 'grid',
-                grid: {
-                    frameWidth: 53,
-                    frameHeight: 53,
-                    startX: 0,
-                    startY: 0,
-                    spacing: 0,
-                    margin: 0
+                libraryMode: 'dynamic',
+                dynamic: {
+                    // alphaThreshold: 128,
+                    // minFrameSize: 40,
+                    // padding: 2
                 },
                 namingPattern: 'tile_{index}'
             }
@@ -185,19 +179,20 @@ class PlatformWorld {
 
             // Use a specific tile frame from the automatically detected frames
             const platformSpriteSheet = AssetManager.getInstance().getSpriteSheet('platform');
-            const tileFrame = platformSpriteSheet?.getFrame(6); // Use frame 6 as ground
-            const texture = platformSpriteSheet?.getTexture();
+            const frame = platformSpriteSheet?.getSpriteFrameUV(1);
 
-            if (tileFrame && texture) {
+
+            if (frame) {
+                const { size, uv } = frame;
                 ground.addComponent({
                     type: 'sprite',
                     texture: 'platform',
-                    width: tileFrame.width,
-                    height: tileFrame.height,
-                    uvX: tileFrame.x / texture.width,
-                    uvY: tileFrame.y / texture.height,
-                    uvWidth: tileFrame.width / texture.width,
-                    uvHeight: tileFrame.height / texture.height,
+                    width: size.width,
+                    height: size.height,
+                    uvX: uv.uvX,
+                    uvY: uv.uvY,
+                    uvWidth: uv.uvWidth,
+                    uvHeight: uv.uvHeight,
                     flipX: false,
                     flipY: false
                 });
@@ -235,19 +230,19 @@ class Player {
 
         // Get the automatically generated frames from ninja sprite sheet
         const ninjaSpriteSheet = AssetManager.getInstance().getSpriteSheet('ninja');
-        const firstFrame = ninjaSpriteSheet?.getFrame(0);
-        const texture = ninjaSpriteSheet?.getTexture();
+        const frame = ninjaSpriteSheet?.getSpriteFrameUV(0);
 
-        if (firstFrame && texture) {
+        if (frame) {
+            const { size, uv } = frame;
             this.entity.addComponent({
                 type: 'sprite',
                 texture: 'ninja',
-                width: firstFrame.width,
-                height: firstFrame.height,
-                uvX: firstFrame.x / texture.width,
-                uvY: firstFrame.y / texture.height,
-                uvWidth: firstFrame.width / texture.width,
-                uvHeight: firstFrame.height / texture.height,
+                width: size.width,
+                height: size.height,
+                uvX: uv.uvX,
+                uvY: uv.uvY,
+                uvWidth: uv.uvWidth,
+                uvHeight: uv.uvHeight,
                 flipX: false,
                 flipY: false
             });

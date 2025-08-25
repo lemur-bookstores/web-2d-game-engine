@@ -22,6 +22,12 @@ test('AnimationSystem advances frame with deltaTime', () => {
     es.on(ANIMATION_EVENTS.COMPLETE, (e) => events.push({ type: 'complete', data: e.data }));
 
     const entity = new Entity('e1');
+
+    // Create animations map in the component (not in spriteSheet)
+    const animations = new Map();
+    animations.set('walk', { name: 'walk', frames: [0, 1, 2, 3], duration: 0.1, loop: true, pingPong: false });
+    animations.set('once', { name: 'once', frames: [0, 1], duration: 0.1, loop: false, pingPong: false });
+
     const anim: AnimationComponent = {
         type: 'animation',
         spriteSheet: 'mock',
@@ -31,8 +37,8 @@ test('AnimationSystem advances frame with deltaTime', () => {
         elapsedTime: 0,
         loop: true,
         playing: true,
-        // satisfy type which may require an animations map/cache
-        animations: new Map()
+        animations: animations,
+        frameSfx: {}
     };
 
     entity.addComponent(anim);
@@ -48,7 +54,6 @@ test('AnimationSystem advances frame with deltaTime', () => {
 
     // Advance to complete a non-looping animation
     // convert animation to non-looping and set to last frame - 1
-    spriteSheet.addAnimation('once', { name: 'once', frames: [0, 1], duration: 0.1, loop: false, pingPong: false });
     anim.currentAnimation = 'once';
     anim.currentFrame = 0;
     anim.frameTime = 0.05;
