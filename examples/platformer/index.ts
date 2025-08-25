@@ -5,7 +5,7 @@ import { AudioSystem } from '../../src/audio/AudioSystem';
 import { Scene } from '../../src/core/Scene';
 import { Entity } from '../../src/ecs/Entity';
 import { MovementSystem } from '../../src/ecs/MovementSystem';
-import { AnimationSystem, RenderSystem } from '../../src/graphics';
+import { Animation, AnimationSystem, RenderSystem } from '../../src/graphics';
 import { InputManager, InputSystem } from '../../src/input';
 
 // Main game class
@@ -116,8 +116,8 @@ class PlatformerGame {
                 libraryMode: 'dynamic',
                 dynamic: {
                     // alphaThreshold: 128,
-                    minFrameSize: 10,
-                    padding: 1
+                    minFrameSize: 11,
+                    padding: 0.5
                 },
                 namingPattern: 'frame_{index}'
             }
@@ -263,7 +263,7 @@ class Player {
         }
 
         // Define animations using the automatically detected frames
-        const animations = new Map<string, any>();
+        const animations = new Map<string, Animation>();
         // Idle (frames 0-3)
         animations.set('idle', {
             name: 'idle',
@@ -275,8 +275,8 @@ class Player {
         // Walk (frames 4-9)
         animations.set('walk', {
             name: 'walk',
-            frames: [4, 5, 6, 7, 8, 9],
-            duration: 0.3,
+            frames: [12, 13, 14, 15],
+            duration: 8.3,
             loop: true,
             pingPong: false
         });
@@ -332,7 +332,7 @@ class Player {
         this.entity.addComponent({
             type: 'animation',
             spriteSheet: 'ninja',
-            currentAnimation: 'idle',
+            currentAnimation: 'idle', // 'idle' | 'walk', | 'jump' | 'attack' | 'hurt' | 'fall' | 'land' | 'dead'
             currentFrame: 0,
             frameTime: 0.1,
             elapsedTime: 0,
