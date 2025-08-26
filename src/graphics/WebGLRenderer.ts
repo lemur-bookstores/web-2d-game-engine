@@ -46,9 +46,13 @@ export class WebGLRenderer implements RenderStrategy {
             throw new Error('WebGL not supported');
         }
 
-        // Enable blending for transparency
-        this.gl.enable(this.gl.BLEND);
-        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+        // Enable blending for transparency if supported by the context (tests may provide a minimal/mock context)
+        if (typeof (this.gl as any).enable === 'function') {
+            this.gl.enable((this.gl as any).BLEND);
+        }
+        if (typeof (this.gl as any).blendFunc === 'function') {
+            this.gl.blendFunc((this.gl as any).SRC_ALPHA, (this.gl as any).ONE_MINUS_SRC_ALPHA);
+        }
 
         this.initializeShaders();
         this.initializeBuffers();

@@ -129,7 +129,9 @@ export class EventSystem {
      * Dispatch an event to all registered listeners
      */
     private dispatchEvent(event: GameEvent): void {
+        // Dispatch to exact-match listeners
         const callbacks = this.listeners.get(event.type);
+        const invoked = new Set<EventCallback<any>>();
 
         if (callbacks) {
             // Create a copy of the callbacks array to avoid issues if listeners are modified during dispatch
@@ -138,8 +140,96 @@ export class EventSystem {
             for (const callback of callbacksCopy) {
                 try {
                     callback(event);
+                    invoked.add(callback);
                 } catch (error) {
                     console.error(`Error in event listener for '${event.type}':`, error);
+                }
+            }
+        }
+
+        // Also dispatch to compatibility names: convert SCREAMING_SNAKE_CASE to camelCase
+        // For example: 'ENGINE:ACTIVE_SCENE_CHANGE' -> 'engine:activeSceneChange' and 'engine:activeSceneChanged'
+        const parts = String(event.type).split(':');
+        if (parts.length === 2) {
+            const prefix = parts[0].toLowerCase();
+            const name = parts[1];
+
+            const toCamel = (s: string) => {
+                return s.toLowerCase().split('_').map((part, i) => i === 0 ? part : (part.charAt(0).toUpperCase() + part.slice(1))).join('');
+            };
+
+            const camelName = toCamel(name);
+            const altType = `${prefix}:${camelName}`;
+
+            // Dispatch to prefix:camelCase (e.g. 'world:entityCreated')
+            if (altType !== event.type) {
+                const altCallbacks = this.listeners.get(altType as any);
+                if (altCallbacks) {
+                    const altCopy = [...altCallbacks];
+                    for (const callback of altCopy) {
+                        if (invoked.has(callback)) continue;
+                        try {
+                            callback(event);
+                            invoked.add(callback);
+                        } catch (error) {
+                            console.error(`Error in event listener for '${altType}':`, error);
+                        }
+                    }
+                }
+            }
+
+            // Also dispatch to unprefixed camelCase name (e.g. 'entityCreated' or 'keyDown')
+            if (camelName !== event.type) {
+                const nameOnlyCallbacks = this.listeners.get(camelName as any);
+                if (nameOnlyCallbacks) {
+                    const nameOnlyCopy = [...nameOnlyCallbacks];
+                    for (const callback of nameOnlyCopy) {
+                        if (invoked.has(callback)) continue;
+                        try {
+                            callback(event);
+                            invoked.add(callback);
+                        } catch (error) {
+                            console.error(`Error in event listener for '${camelName}':`, error);
+                        }
+                    }
+                }
+            }
+
+            // Special-case: if the name ends with '_CHANGE', also emit a past-tense 'Changed' variant for both prefixed and unprefixed forms
+            if (name.endsWith('_CHANGE')) {
+                const changedName = camelName + 'd';
+                const changedType = `${prefix}:${changedName}`;
+
+                if (changedType !== event.type && changedType !== altType) {
+                    const changedCallbacks = this.listeners.get(changedType as any);
+                    if (changedCallbacks) {
+                        const changedCopy = [...changedCallbacks];
+                        for (const callback of changedCopy) {
+                            if (invoked.has(callback)) continue;
+                            try {
+                                callback(event);
+                                invoked.add(callback);
+                            } catch (error) {
+                                console.error(`Error in event listener for '${changedType}':`, error);
+                            }
+                        }
+                    }
+                }
+
+                if (changedName !== event.type && changedName !== camelName) {
+                    const changedOnlyCallbacks = this.listeners.get(changedName as any);
+                    if (changedOnlyCallbacks) {
+                        const changedOnlyCopy = [...changedOnlyCallbacks];
+                        for (const callback of changedOnlyCopy) {
+                            if (invoked.has(callback)) continue;
+                            try {
+                                callback(event);
+                                invoked.add(callback);
+                            } catch (error) {
+                                console.error(`Error in event listener for '${changedName}':`, error);
+                            }
+                        }
+                    }
                 }
             }
         }

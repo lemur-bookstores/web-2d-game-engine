@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventSystem } from '../../src/core/EventSystem';
 import { InputManager } from '../../src/input';
 import { createKeyboardEvent, createMouseEvent, createWheelEvent, createTouch, createTouchEvent } from '../helpers/event-helpers';
+import { Vector2 } from '../../src';
 
 describe('Input System Tests', () => {
     let inputManager: InputManager;
@@ -41,9 +42,7 @@ describe('Input System Tests', () => {
 
             // Simulate keyboard event
             const event = createKeyboardEvent('keydown', { code: 'Space' });
-            console.log('Event before dispatch:', event);
             document.dispatchEvent(event);
-            console.log('keyPressed:', keyPressed);
 
             expect(keyPressed).toBe(true);
             expect(inputManager.isKeyPressed('Space')).toBe(true);
@@ -120,7 +119,7 @@ describe('Input System Tests', () => {
 
             // Agregar directamente al InputManager
             const inputManager = InputManager.getInstance();
-            inputManager['touches'].set(0, touchData);
+            inputManager['touches'].set(0, touchData as any);
 
             // Emitir el evento manualmente
             eventSystem.emit('touchStart', {

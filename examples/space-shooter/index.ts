@@ -3,7 +3,10 @@ import { Scene } from '../../src/core/Scene';
 import { Entity } from '../../src/ecs/Entity';
 import { EventSystem } from '../../src/core/EventSystem';
 import { AssetManager } from '../../src/assets/AssetManager';
+import { AudioManager } from '../../src/audio/AudioManager';
 import { RenderSystem } from '../../src/graphics';
+import { AnimationSystem } from '../../src/graphics/AnimationSystem';
+import { AudioSystem } from '../../src/audio/AudioSystem';
 import { InputManager, InputSystem } from '../../src/input';
 import { MovementSystem } from '../../src/ecs/MovementSystem';
 import { CollisionSystem } from '../../src/ecs/CollisionSystem';
@@ -121,6 +124,13 @@ class SpaceShooterGame {
             // Load game assets after engine initialization
             await this.loadAssets();
 
+            // Start background music if available
+            try {
+                AudioManager.getInstance().play('music', { loop: true, volume: 0.5, group: 'music' });
+            } catch (e) {
+                // ignore audio errors in example
+            }
+
         } catch (error) {
             console.error('Failed to initialize engine:', error);
             throw error;
@@ -162,6 +172,27 @@ class SpaceShooterGame {
 
         gameScene.addEntity(this.player);
 
+        // Attach optional animation component if 'nave_sprites' spritesheet exists
+        try {
+            const ss = this.assetManager.getSpriteSheet && this.assetManager.getSpriteSheet('nave_sprites');
+            if (ss) {
+                this.player.addComponent({
+                    type: 'animation',
+                    spriteSheet: 'nave_sprites',
+                    currentAnimation: 'idle',
+                    currentFrame: 0,
+                    frameTime: 0.1,
+                    elapsedTime: 0,
+                    loop: true,
+                    playing: true,
+                    animations: new Map(),
+                    frameSfx: { 2: 'thrust' }
+                });
+            }
+        } catch (e) {
+            // ignore if cannot attach animation
+        }
+
         // Set up game systems
         this.setupInput();
         this.setupEnemySpawner();
@@ -172,6 +203,13 @@ class SpaceShooterGame {
         // Add the collision system to handle collisions
         this.engine.addSystem(new CollisionSystem());
         this.engine.addSystem(this.inputManager);
+        // Try to add optional animation and audio systems
+        try {
+            this.engine.addSystem(new AnimationSystem(this.assetManager));
+            this.engine.addSystem(new AudioSystem());
+        } catch (e) {
+            console.warn('Optional Animation/Audio systems not added:', e);
+        }
 
         // Setup cleanup for entities that go off-screen
         this.setupCleanup();
@@ -200,6 +238,17 @@ class SpaceShooterGame {
 
             // Load projectile texture
             await this.assetManager.loadTexture('laser', 'assets/laser_pixel.png');
+
+            // Load audio samples (use provided mp3 assets)
+            try {
+                await AudioManager.getInstance().loadAudio('laser', 'assets/laser.mp3');
+                await AudioManager.getInstance().loadAudio('explosion', 'assets/explosion-fx.mp3');
+                await AudioManager.getInstance().loadAudio('gameover', 'assets/game-over-arcade.mp3');
+                await AudioManager.getInstance().loadAudio('music', 'assets/soundtrack.mp3');
+                console.log('Audio samples loaded');
+            } catch (e) {
+                console.warn('Some audio samples not loaded (files may be missing in example):', e);
+            }
 
             console.log('All game assets loaded successfully');
 
@@ -414,8 +463,25 @@ class SpaceShooterGame {
             isTrigger: true
         });
 
+        // Optional: attach an audio component so AudioSystem can autoplay SFX if configured
+        projectile.addComponent({
+            type: 'audio',
+            clip: 'laser',
+            autoplay: true,
+            loop: false,
+            volume: 1,
+            group: 'sfx'
+        });
+
         this.projectiles.push(projectile);
         this.engine.getActiveScene()?.addEntity(projectile);
+
+        // Play firing SFX immediately via AudioManager (fallback to AudioSystem if configured)
+        try {
+            AudioManager.getInstance().play('laser', { group: 'sfx' });
+        } catch (e) {
+            // ignore audio errors in example
+        }
 
         // Remove projectile after 2 seconds
         setTimeout(() => {
@@ -440,12 +506,15 @@ class SpaceShooterGame {
             // Increase score
             this.score += 100;
             this.updateScore();
+            // Play explosion SFX
+            try { AudioManager.getInstance().play('explosion', { group: 'sfx' }); } catch (e) { }
         }
     }
 
     private handlePlayerEnemyCollision() {
         // Game over
         this.engine.stop();
+        try { AudioManager.getInstance().play('gameover', { group: 'music' }); } catch (e) { }
         alert(`Game Over! Final Score: ${this.score}`);
     }
 

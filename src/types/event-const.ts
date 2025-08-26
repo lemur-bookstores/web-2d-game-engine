@@ -86,6 +86,11 @@ export const PHYSICS_EVENTS: PhysicsEvents = {
     COLLISION_POST_SOLVE: 'PHYSICS:COLLISION_POST_SOLVE',
 } as const;
 
+export const ANIMATION_EVENTS: AnimationEvents = {
+    FRAME: 'ANIMATION:FRAME',
+    COMPLETE: 'ANIMATION:COMPLETE'
+} as const;
+
 export const ASSET_EVENTS: AssetEvents = {
     LOAD: 'ASSET:LOAD',
     UNLOAD: 'ASSET:UNLOAD',

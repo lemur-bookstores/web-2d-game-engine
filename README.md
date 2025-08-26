@@ -409,15 +409,31 @@ Para más detalles, explora:
 - [src/types/](src/types/) para definiciones de tipos
 - [src/core/](src/core/) para la implementación del core
 
+## 📝 Notas de Versiones
+
+### v0.3.1 - Animations FSM & Compatibility (Actual)
+
+Principales cambios:
+
+- Librería Sprite-Sheet refactorizada en arquitectura hexagonal (detección grid/dinámica, adaptadores, facade).
+- Integración con `AssetManager` y nuevos métodos `SpriteSheet.fromFrames` & adapter de engine.
+- Sistema de Animación actualizado: correcciones de timing (frameTime vs duration), ping-pong tipado y UVs esperadas por tests.
+- Nueva Máquina de Estado de Animaciones (FSM): transiciones por condición, trigger y eventos; prioridad; eventos `onEnter`/`onExit`.
+- EventSystem: compatibilidad con nombres camelCase y versiones sin prefijo (ej. `entityCreated`, `keyDown`).
+- InputManager: compat legacy keyDown/keyUp + parche para eventos sintéticos en entorno de test.
+- AudioSystem: reproducción de SFX mapeados a frames vía evento `ANIMATION:FRAME`.
+- WebGLRenderer: tolerancia a contextos mock y fallback seguro a Canvas2D.
+- Tests: suite ampliada (FSM, audio+anim, sprite-sheet lib) – 52 tests.
+
+### v0.3.0 - Animaciones y Audio (Completado)
+
+- Sistema de animaciones por sprite sheet.
+- Sonidos mapeables a frames de animación (SFX puntuales) y soporte base de audio.
+- Integración inicial de eventos de animación (`FRAME`, `COMPLETE`).
+
 ## 📝 Roadmap
 
 ### Próximas Versiones
-
-- [ ] **v0.3.0 - Animaciones y Audio**
-
-  - Sistema de animaciones con sprites
-  - Web Audio API integrado
-  - Efectos de sonido y música de fondo
 
 - [ ] **v0.4.0 - Física Avanzada**
 
@@ -425,7 +441,19 @@ Para más detalles, explora:
   - Joints y constraints
   - Partículas y efectos
 
-- [ ] **v0.5.0 - Herramientas**
+- [ ] **v0.5.0 - Layers y Camera**
+
+  - Sistema de capas para organizar elementos por profundidad
+  - Camera2D con viewport, zoom y seguimiento de entidades
+  - Efectos de cámara (shake, smooth follow, transitions)
+  - Culling y estrategias de renderizado optimizadas: en lugar de un "culling automático" rígido, implementar una estrategia combinada que reduzca el coste y evite artefactos visuales:
+    - Culling por viewport con margen (loose-frustum) para evitar popping en bordes.
+    - Soporte opcional de particionado espacial (quadtree/grid) para limitar tests por frame.
+    - Culling por capas y LOD por distancia para reducir trabajo en objetos lejanos.
+    - Flags por entidad (por ejemplo `alwaysRender`, `cullingRadius`) para excepciones controladas.
+    - Batch de tests y actualizaciones perezosas (lazy updates) para minimizar sobrecarga en frames con muchos objetos.
+
+- [ ] **v0.6.0 - Herramientas**
   - Editor de niveles web
   - Inspector de entidades en tiempo real
   - Profiler de rendimiento
@@ -437,6 +465,8 @@ Para más detalles, explora:
 - [ ] Soporte para mobile con controles táctiles
 - [ ] Networking para juegos multijugador
 - [ ] Plugin system para extensiones
+- [ ] Parallax scrolling para fondos con múltiples capas
+- [ ] Modos de mezcla y efectos visuales por capa
 
 ## 🤝 Contribución
 
