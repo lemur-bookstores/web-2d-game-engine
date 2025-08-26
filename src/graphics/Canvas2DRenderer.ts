@@ -22,6 +22,23 @@ export class Canvas2DRenderer implements RenderStrategy {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }
 
+    applyCameraTransform(x: number, y: number, zoom: number, rotation: number = 0): void {
+        // Translate to center and apply zoom/rotation and translate by camera position
+        this.ctx.save();
+        // Move origin to center
+        this.ctx.translate(this.ctx.canvas.width / 2, this.ctx.canvas.height / 2);
+        // Apply zoom
+        this.ctx.scale(zoom, zoom);
+        // Apply rotation
+        if (rotation !== 0) this.ctx.rotate(rotation);
+        // Translate world by negative camera position
+        this.ctx.translate(-x, -y);
+    }
+
+    resetTransform(): void {
+        this.ctx.restore();
+    }
+
     drawSprite(
         texture: Texture,
         position: Vector2,

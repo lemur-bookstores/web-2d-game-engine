@@ -4,6 +4,7 @@ import { SpriteComponent } from './Sprite';
 import { RenderStrategy } from './Renderer';
 import { Texture } from './Texture';
 import { Vector2 } from '../math/Vector2';
+import { Camera2D } from './Camera2D';
 import { Color } from '../math/Color';
 
 export interface TransformComponent {
@@ -18,6 +19,7 @@ export class RenderSystem extends System {
     private renderer: RenderStrategy;
     private textures = new Map<string, Texture>();
     private _backgroundColor: Color = new Color(0, 0, 0, 255);
+    private camera: Camera2D | null = null;
 
     constructor(renderer: RenderStrategy) {
         super();
@@ -59,6 +61,15 @@ export class RenderSystem extends System {
     update(entities: Entity[], _deltaTime: number): void {
         // Clear the screen
         this.renderer.clear();
+        // Apply camera transform if available
+        if (this.camera && 'applyCameraTransform' in this.renderer) {
+            (this.renderer as any).applyCameraTransform(
+                this.camera.position.x,
+                this.camera.position.y,
+                this.camera.zoom,
+                this.camera.rotation
+            );
+        }
 
         // Get all renderable entities
         const renderableEntities = this.getEntitiesWithComponents(
@@ -74,8 +85,17 @@ export class RenderSystem extends System {
             this.renderEntity(entity);
         });
 
+        // Reset transform if renderer supports it
+        if (this.camera && 'resetTransform' in this.renderer) {
+            (this.renderer as any).resetTransform();
+        }
+
         // Present the rendered frame
         this.renderer.present();
+    }
+
+    setCamera(camera: Camera2D | null): void {
+        this.camera = camera;
     }
 
     private renderEntity(entity: Entity): void {
@@ -106,6 +126,21 @@ export class RenderSystem extends System {
             sprite.width * transform.scale.x,
             sprite.height * transform.scale.y
         );
+
+        // Simple viewport culling: if camera present, convert world pos to screen and
+        // skip rendering if outside viewport bounds with a small margin
+        if (this.camera) {
+            const screenPos = this.camera.worldToScreen(finalPosition);
+            const margin = 50; // allow some margin
+            if (
+                screenPos.x + finalSize.x / 2 < -margin ||
+                screenPos.x - finalSize.x / 2 > this.camera.viewport.width + margin ||
+                screenPos.y + finalSize.y / 2 < -margin ||
+                screenPos.y - finalSize.y / 2 > this.camera.viewport.height + margin
+            ) {
+                return; // culled
+            }
+        }
 
         // Render the sprite
         // console.log(`[RenderSystem] About to call renderer.drawSprite for entity ${entity.id}`);
