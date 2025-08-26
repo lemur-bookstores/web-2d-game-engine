@@ -3,6 +3,12 @@ import { EntityId } from '../types';
 import { Entity } from '@/ecs';
 import { SCENE_EVENTS } from '@/types/event-const';
 
+export interface CollisionLayer {
+    name: string;
+    bit: number;
+    mask?: number;
+}
+
 /**
  * Scene class for organizing and managing game entities
  */
@@ -13,10 +19,12 @@ export class Scene {
     private entities = new Map<EntityId, any>();
     private eventSystem: EventSystem;
     private initialized = false;
+    private layers = new Map<string, CollisionLayer>();
 
     constructor(name: string) {
         this.name = name;
         this.eventSystem = EventSystem.getInstance();
+        this.initializeDefaultLayers();
     }
 
     /**
@@ -233,6 +241,57 @@ export class Scene {
             entityCount: this.getEntityCount(),
             activeEntityCount: this.getActiveEntityCount()
         };
+    }
+
+    /**
+     * Initialize default collision layers
+     */
+    private initializeDefaultLayers(): void {
+        this.addLayer('default', 0x0001);
+        this.addLayer('player', 0x0002);
+        this.addLayer('enemy', 0x0004);
+        this.addLayer('ground', 0x0008);
+        this.addLayer('pickup', 0x0010);
+        this.addLayer('ui', 0x0020);
+    }
+
+    /**
+     * Add a collision layer
+     */
+    addLayer(name: string, bit: number, mask?: number): void {
+        this.layers.set(name, {
+            name,
+            bit,
+            mask: mask ?? 0xFFFF // Default: collide with everything
+        });
+    }
+
+    /**
+     * Get layer info by name
+     */
+    getLayer(name: string): CollisionLayer | undefined {
+        return this.layers.get(name);
+    }
+
+    /**
+     * Get layer mask from array of layer names
+     */
+    getLayerMask(layerNames: string[]): number {
+        let mask = 0;
+        for (const name of layerNames) {
+            const layer = this.layers.get(name);
+            if (layer) {
+                mask |= layer.bit;
+            }
+        }
+        return mask;
+    }
+
+    /**
+     * Get all layers
+     */
+    getLayers(): CollisionLayer[] {
+        return Array.from(this.layers.values());
     }
 
     /**

@@ -108,6 +108,7 @@ declare type PhysicsEvents = {
     COLLISION_BEGIN: CreateEventType<EventNames.PHYSICS, 'COLLISION_BEGIN'>,
     COLLISION_END: CreateEventType<EventNames.PHYSICS, 'COLLISION_END'>,
     COLLISION_POST_SOLVE: CreateEventType<EventNames.PHYSICS, 'COLLISION_POST_SOLVE'>,
+    JOINT_BREAK: CreateEventType<EventNames.PHYSICS, 'JOINT_BREAK'>,
 };
 
 declare type AnimationEvents = {
