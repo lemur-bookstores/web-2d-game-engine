@@ -1,5 +1,7 @@
 import { Vector2 } from '../math/Vector2';
 import { PhysicsWorld } from './PhysicsWorld';
+import { EventSystem } from '@/core/EventSystem';
+import { PHYSICS_EVENTS } from '@/types/event-const';
 import { PhysicsBody } from './PhysicsBody';
 
 export enum JointType {
@@ -71,6 +73,9 @@ export class PhysicsJoint {
     private joint?: any; // Box2D Joint
     private config: JointConfig;
     private id: string;
+    private isBrokenFlag: boolean = false;
+    private onBreakCallback?: (info: any) => void;
+    private eventSystem: EventSystem = EventSystem.getInstance();
 
     constructor(world: PhysicsWorld, config: JointConfig) {
         this.world = world;
@@ -115,6 +120,15 @@ export class PhysicsJoint {
                 this.createWeldJoint(box2d);
                 break;
         }
+
+        // subscribe to joint break events to update local state
+        this.eventSystem.on(PHYSICS_EVENTS.JOINT_BREAK, (payload: any) => {
+            if (!payload || !payload.joint) return;
+            if (this.joint && payload.joint === this.joint) {
+                this.isBrokenFlag = true;
+                if (this.onBreakCallback) this.onBreakCallback(payload);
+            }
+        });
     }
 
     private createRevoluteJoint(box2d: any): void {
@@ -294,8 +308,9 @@ export class PhysicsJoint {
     }
 
     public isActive(): boolean {
+        if (this.isBrokenFlag) return false;
         if (!this.joint) return false;
-        return this.joint.IsActive();
+        return this.joint.IsActive ? this.joint.IsActive() : true;
     }
 
     public setMotorSpeed(speed: number): void {
@@ -322,8 +337,16 @@ export class PhysicsJoint {
 
     public destroy(): void {
         if (!this.joint) return;
-
         this.world.destroyJoint(this.joint);
         this.joint = undefined;
+        this.isBrokenFlag = true;
+    }
+
+    public isBroken(): boolean {
+        return this.isBrokenFlag;
+    }
+
+    public onBreak(cb: (info: any) => void): void {
+        this.onBreakCallback = cb;
     }
 }

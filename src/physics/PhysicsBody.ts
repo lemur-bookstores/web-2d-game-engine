@@ -26,6 +26,9 @@ export interface PhysicsBodyConfig {
     isSensor?: boolean;
     position?: Vector2;
     angle?: number;
+    // collision filtering
+    collisionCategory?: number; // categoryBits
+    collisionMask?: number; // maskBits
 }
 
 export class PhysicsBody {
@@ -46,6 +49,8 @@ export class PhysicsBody {
             friction: 0.2,
             restitution: 0.2,
             isSensor: false,
+            collisionCategory: 0x0001,
+            collisionMask: 0xFFFF,
             position: new Vector2(),
             angle: 0,
             ...config
@@ -89,6 +94,27 @@ export class PhysicsBody {
         fixtureDef.friction = this.config.friction!;
         fixtureDef.restitution = this.config.restitution!;
         fixtureDef.isSensor = this.config.isSensor!;
+        // Collision filtering
+        // Assign filter defensively using any to handle differing Box2D bindings
+        try {
+            const b2FilterCtor = (box2d as any).b2Filter;
+            if (typeof b2FilterCtor === 'function') {
+                const filter = new b2FilterCtor();
+                filter.categoryBits = this.config.collisionCategory!;
+                filter.maskBits = this.config.collisionMask!;
+                (fixtureDef as any).filter = filter;
+            } else {
+                (fixtureDef as any).filter = {
+                    categoryBits: this.config.collisionCategory!,
+                    maskBits: this.config.collisionMask!
+                };
+            }
+        } catch (e) {
+            (fixtureDef as any).filter = {
+                categoryBits: this.config.collisionCategory!,
+                maskBits: this.config.collisionMask!
+            };
+        }
 
         if (this.config.shape === PhysicsShape.Box) {
             const shape = new box2d.b2PolygonShape();

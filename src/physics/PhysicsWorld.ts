@@ -17,6 +17,7 @@ export class PhysicsWorld {
     private static instance: PhysicsWorld;
     private box2D: Box2D | undefined;
     private world: World | undefined;
+    private joints: Set<any> = new Set();
     private eventSystem: EventSystem;
     private gravity: Vector2;
     private timeStep: number = 1 / 60;
@@ -77,6 +78,33 @@ export class PhysicsWorld {
         const h = dt / this.substeps;
         for (let i = 0; i < this.substeps; i++) {
             this.world.Step(h, this.velocityIterations, this.positionIterations);
+            // After stepping, check joint reaction forces for breakage
+            try {
+                for (const joint of Array.from(this.joints)) {
+                    if (!joint) continue;
+                    // defensive access to GetReactionForce / GetReactionTorque
+                    const reaction = (joint.GetReactionForce && typeof joint.GetReactionForce === 'function')
+                        ? joint.GetReactionForce(1 / h) : undefined;
+                    const torque = (joint.GetReactionTorque && typeof joint.GetReactionTorque === 'function')
+                        ? joint.GetReactionTorque(1 / h) : undefined;
+
+                    // simple threshold heuristic: large linear force or torque
+                    const linearMag = reaction ? Math.hypot(reaction.x || reaction.get_x?.() || 0, reaction.y || reaction.get_y?.() || 0) : 0;
+                    const torqueMag = typeof torque === 'number' ? Math.abs(torque) : 0;
+                    const THRESHOLD_FORCE = 1e5; // high default, safe for most demos
+                    const THRESHOLD_TORQUE = 1e5;
+
+                    if (linearMag > THRESHOLD_FORCE || torqueMag > THRESHOLD_TORQUE) {
+                        // emit joint break event and destroy joint
+                        this.eventSystem.emit(PHYSICS_EVENTS.JOINT_BREAK, { joint, linearMag, torqueMag });
+                        this.destroyJoint(joint);
+                        this.joints.delete(joint);
+                    }
+                }
+            } catch (err) {
+                // swallow any errors from joint checks to avoid breaking simulation
+                // console.warn('PhysicsWorld: joint check failed', err);
+            }
         }
     }
 
@@ -164,7 +192,9 @@ export class PhysicsWorld {
             return undefined;
         }
 
-        return (this.world as any).CreateJoint(jointDef);
+        const j = (this.world as any).CreateJoint(jointDef);
+        if (j) this.joints.add(j);
+        return j;
     }
 
     public destroyJoint(joint: any): void {
@@ -180,6 +210,7 @@ export class PhysicsWorld {
         }
 
         (this.world as any).DestroyJoint(joint);
+        this.joints.delete(joint);
     }
 
     public queryAABB(aabb: { lowerBound: Vector2; upperBound: Vector2 }): PhysicsBody[] {
