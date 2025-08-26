@@ -1,9 +1,8 @@
-import { GameEngine } from '@/core/Engine';
-import { Scene } from '@/core/Scene';
-import { Entity } from '@/ecs/Entity';
-import { PhysicsWorld } from '@/physics/PhysicsWorld';
-import { PhysicsBody, PhysicsBodyType, PhysicsShape } from '@/physics/PhysicsBody';
-import { Vector2 } from '@/math/Vector2';
+import { GameEngine, Scene, Vector2 } from "../../src";
+import { Entity } from "../../src/ecs/Entity";
+import { PhysicsBody, PhysicsBodyType, PhysicsShape } from "../../src/physics/PhysicsBody";
+import { PhysicsWorld } from "../../src/physics/PhysicsWorld";
+
 
 // Minimal example runtime for the platformer skeleton.
 async function run() {
