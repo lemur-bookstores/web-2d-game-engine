@@ -12,6 +12,8 @@ export interface AnimationComponent {
     animations: Map<string, Animation>;
     // Optional mapping from animation frame index -> sfx clip name
     frameSfx?: { [frameIndex: number]: string };
+    // Runtime direction for ping-pong animations: 1 = forward, -1 = backward
+    direction?: number;
 }
 
 export class AnimationState {

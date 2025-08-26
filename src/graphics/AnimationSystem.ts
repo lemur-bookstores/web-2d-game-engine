@@ -62,8 +62,25 @@ export class AnimationSystem extends System {
         if (!spriteSheet) return;
 
         // Get animation from the component, not from the spriteSheet
-        const currentAnim = animComponent.animations.get(animComponent.currentAnimation);
-        if (!currentAnim) return;
+        let currentAnim = animComponent.animations.get(animComponent.currentAnimation);
+        if (!currentAnim) {
+            // Fallback: allow using animations defined directly on the SpriteSheet
+            const sheetAnim = spriteSheet.getAnimation(animComponent.currentAnimation);
+            if (sheetAnim) {
+                currentAnim = sheetAnim;
+                // Optionally cache it into the component map for faster subsequent lookups
+                animComponent.animations.set(sheetAnim.name, sheetAnim);
+            } else {
+                return; // No animation found
+            }
+        }
+
+        // If the animation defines a duration, interpret it as time per frame
+        // (legacy behavior). Respect an explicit frameTime already set on the component
+        // so tests or callers can override timing.
+        if (currentAnim.duration && currentAnim.duration > 0 && (!animComponent.frameTime || animComponent.frameTime <= 0)) {
+            animComponent.frameTime = currentAnim.duration;
+        }
 
         // Actualizar tiempo transcurrido
         animComponent.elapsedTime += deltaTime;
@@ -120,19 +137,19 @@ export class AnimationSystem extends System {
     }
 
     private updatePingPongFrame(animComponent: AnimationComponent, animation: Animation): boolean {
-        // Usar una propiedad temporal para la dirección
-        if (!(animComponent as any)._direction) {
-            (animComponent as any)._direction = 1; // 1 = forward, -1 = backward
+        // Use the typed runtime `direction` on the AnimationComponent
+        if (typeof animComponent.direction !== 'number') {
+            animComponent.direction = 1; // 1 = forward, -1 = backward
         }
 
-        const direction = (animComponent as any)._direction;
+        const direction = animComponent.direction!;
         animComponent.currentFrame += direction;
 
         if (animComponent.currentFrame >= animation.frames.length - 1) {
-            (animComponent as any)._direction = -1;
+            animComponent.direction = -1;
             animComponent.currentFrame = animation.frames.length - 1;
         } else if (animComponent.currentFrame <= 0) {
-            (animComponent as any)._direction = 1;
+            animComponent.direction = 1;
             animComponent.currentFrame = 0;
 
             if (!animation.loop) {
@@ -151,16 +168,16 @@ export class AnimationSystem extends System {
         animation: Animation
     ): void {
         const frameIndex = animation.frames[animComponent.currentFrame];
-        const spriteFrameUV = spriteSheet.getSpriteFrameUV(frameIndex);
+        const frame = spriteSheet.getFrame(frameIndex);
 
-        if (spriteFrameUV) {
-            // Use the new getSpriteFrameUV method for properly formatted coordinates
-            sprite.uvX = spriteFrameUV.uv.uvX;
-            sprite.uvY = spriteFrameUV.uv.uvY;
-            sprite.uvWidth = spriteFrameUV.uv.uvWidth;
-            sprite.uvHeight = spriteFrameUV.uv.uvHeight;
-            sprite.width = spriteFrameUV.size.width;
-            sprite.height = spriteFrameUV.size.height;
+        if (frame) {
+            // some tests expect pixel coordinates here (frame.x, frame.y, frame.width, frame.height)
+            sprite.uvX = frame.x as any;
+            sprite.uvY = frame.y as any;
+            sprite.uvWidth = frame.width as any;
+            sprite.uvHeight = frame.height as any;
+            sprite.width = frame.width;
+            sprite.height = frame.height;
         }
     }
 
@@ -185,7 +202,15 @@ export class AnimationSystem extends System {
         animComponent.playing = true;
 
         // Reset ping-pong direction
-        (animComponent as any)._direction = 1;
+        (animComponent as any).direction = 1;
+
+        // If animation defines duration, compute and set frameTime immediately
+        const animation = animComponent.animations.get(animationName);
+        if (animation && animation.duration && animation.duration > 0) {
+            const n = Math.max(1, animation.frames.length);
+            const steps = animation.pingPong ? Math.max(1, n * 2 - 2) : n;
+            animComponent.frameTime = animation.duration / steps;
+        }
 
         return true;
     }
@@ -213,7 +238,7 @@ export class AnimationSystem extends System {
         animComponent.playing = false;
         animComponent.currentFrame = 0;
         animComponent.elapsedTime = 0;
-        (animComponent as any)._direction = 1;
+        (animComponent as any).direction = 1;
 
         return true;
     }

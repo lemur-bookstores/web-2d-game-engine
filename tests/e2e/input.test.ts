@@ -42,9 +42,7 @@ describe('Input System Tests', () => {
 
             // Simulate keyboard event
             const event = createKeyboardEvent('keydown', { code: 'Space' });
-            console.log('Event before dispatch:', event);
             document.dispatchEvent(event);
-            console.log('keyPressed:', keyPressed);
 
             expect(keyPressed).toBe(true);
             expect(inputManager.isKeyPressed('Space')).toBe(true);
