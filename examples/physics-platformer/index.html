@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Physics Platformer Example</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background: #222;
+        color: white;
+      }
+      canvas {
+        border: 2px solid #666;
+        background: #87ceeb;
+        display: block;
+        margin: 20px auto;
+      }
+      .controls {
+        text-align: center;
+        margin: 20px;
+      }
+      .info {
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="info">
+      <h1>Physics Platformer Example</h1>
+      <p>
+        This example demonstrates the v0.4.0 physics system with Box2D
+        integration.
+      </p>
+      <div class="controls">
+        <p><strong>Controls:</strong> Arrow keys to move, Space to jump</p>
+        <p>
+          <strong>Features:</strong> Dynamic physics bodies, static platforms,
+          collision detection
+        </p>
+      </div>
+    </div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script type="module" src="./physics-platformer.js"></script>
+  </body>
+</html>

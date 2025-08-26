@@ -1,3 +1,9 @@
+interface Vector {
+    x: number;
+    y: number;
+    z?: number;
+}
+
 export interface Component {
     type: string;
     [key: string]: any;
@@ -5,9 +11,9 @@ export interface Component {
 
 export interface TransformComponent extends Component {
     type: 'transform';
-    position: { x: number; y: number };
+    position: Vector;
     rotation: number;
-    scale: { x: number; y: number };
+    scale: Omit<Vector, 'z'>;
 }
 
 export interface SpriteComponent extends Component {
@@ -31,7 +37,7 @@ export interface PhysicsComponent extends Component {
     density: number;
     friction: number;
     restitution: number;
-    velocity: { x: number; y: number };
+    velocity: Vector;
     angularVelocity: number;
 }
 
@@ -40,4 +46,20 @@ export interface ColliderComponent extends Component {
     width: number;
     height: number;
     isTrigger: boolean;
+}
+
+export interface PhysicsBodyComponent extends Component {
+    type: 'physicsBody' | 'physics';
+    bodyType: 'dynamic' | 'static' | 'kinematic';
+    shape: 'box' | 'circle' | 'polygon';
+    width?: number;
+    height?: number;
+    radius?: number;
+    vertices?: Vector[];
+    density: number;
+    friction: number;
+    restitution: number;
+    fixedRotation?: boolean;
+    isSensor?: boolean;
+    collisionGroup?: number;
 }
