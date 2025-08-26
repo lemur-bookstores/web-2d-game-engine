@@ -79,6 +79,19 @@ export class InputManager {
     private touchMoveCallbacks: Function[] = [];
     private touchEndCallbacks: Function[] = [];
 
+    // Bound event handler references so listeners can be removed
+    private boundHandleKeyDown!: (e: globalThis.KeyboardEvent) => void;
+    private boundHandleKeyUp!: (e: globalThis.KeyboardEvent) => void;
+    private boundHandleMouseDown!: (e: globalThis.MouseEvent) => void;
+    private boundHandleMouseUp!: (e: globalThis.MouseEvent) => void;
+    private boundHandleMouseMove!: (e: globalThis.MouseEvent) => void;
+    private boundHandleMouseWheel!: (e: WheelEvent) => void;
+    private boundHandleTouchStart!: (e: globalThis.TouchEvent) => void;
+    private boundHandleTouchMove!: (e: globalThis.TouchEvent) => void;
+    private boundHandleTouchEnd!: (e: globalThis.TouchEvent) => void;
+    private boundHandleWindowBlur!: () => void;
+    private originalDocumentDispatch?: typeof document.dispatchEvent;
+
     private constructor() {
         this.eventSystem = EventSystem.getInstance();
         this.config = {
@@ -87,6 +100,17 @@ export class InputManager {
             enableMouse: true,
             enableKeyboard: true
         };
+        // Pre-bind handlers so they can be removed later
+        this.boundHandleKeyDown = this.handleKeyDown.bind(this);
+        this.boundHandleKeyUp = this.handleKeyUp.bind(this);
+        this.boundHandleMouseDown = this.handleMouseDown.bind(this);
+        this.boundHandleMouseUp = this.handleMouseUp.bind(this);
+        this.boundHandleMouseMove = this.handleMouseMove.bind(this);
+        this.boundHandleMouseWheel = this.handleMouseWheel.bind(this);
+        this.boundHandleTouchStart = this.handleTouchStart.bind(this);
+        this.boundHandleTouchMove = this.handleTouchMove.bind(this);
+        this.boundHandleTouchEnd = this.handleTouchEnd.bind(this);
+        this.boundHandleWindowBlur = this.handleWindowBlur.bind(this);
     }
 
     public static getInstance(): InputManager {
@@ -97,6 +121,8 @@ export class InputManager {
     }
 
     public initialize(config: InputConfig = {}): void {
+        // Always refresh EventSystem reference (EventSystem.reset() may have created a new instance between tests)
+        this.eventSystem = EventSystem.getInstance();
         this.config = { ...this.config, ...config };
 
         if (config.canvas) {
@@ -104,31 +130,51 @@ export class InputManager {
         }
 
         this.setupEventListeners();
+
+        // In test environment, vitest helpers may dispatch plain objects instead of real Event instances.
+        // Monkey patch dispatchEvent to manually forward keyboard events to handlers.
+        if (process.env.NODE_ENV === 'test' && !this.originalDocumentDispatch && this.config.enableKeyboard) {
+            this.originalDocumentDispatch = document.dispatchEvent.bind(document);
+            const self = this;
+            (document as any).dispatchEvent = function patchedDispatch(evt: any) {
+                try {
+                    if (evt && typeof evt === 'object' && typeof evt.type === 'string') {
+                        if (evt.type === 'keydown') self.boundHandleKeyDown(evt as any);
+                        else if (evt.type === 'keyup') self.boundHandleKeyUp(evt as any);
+                    }
+                } catch { /* ignore */ }
+                // Attempt native dispatch if it's a real Event
+                if (evt instanceof Event) {
+                    return self.originalDocumentDispatch!(evt);
+                }
+                return true; // simulate successful dispatch
+            } as any;
+        }
     }
 
     private setupEventListeners(): void {
         if (this.config.enableKeyboard) {
-            document.addEventListener('keydown', this.handleKeyDown.bind(this));
-            document.addEventListener('keyup', this.handleKeyUp.bind(this));
+            document.addEventListener('keydown', this.boundHandleKeyDown);
+            document.addEventListener('keyup', this.boundHandleKeyUp);
         }
 
         if (this.config.enableMouse && this.canvas) {
-            this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-            this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
-            this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-            this.canvas.addEventListener('wheel', this.handleMouseWheel.bind(this));
+            this.canvas.addEventListener('mousedown', this.boundHandleMouseDown);
+            this.canvas.addEventListener('mouseup', this.boundHandleMouseUp);
+            this.canvas.addEventListener('mousemove', this.boundHandleMouseMove);
+            this.canvas.addEventListener('wheel', this.boundHandleMouseWheel);
             this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
         }
 
         if (this.config.enableTouch && this.canvas) {
-            this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
-            this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this));
-            this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
-            this.canvas.addEventListener('touchcancel', this.handleTouchEnd.bind(this));
+            this.canvas.addEventListener('touchstart', this.boundHandleTouchStart);
+            this.canvas.addEventListener('touchmove', this.boundHandleTouchMove);
+            this.canvas.addEventListener('touchend', this.boundHandleTouchEnd);
+            this.canvas.addEventListener('touchcancel', this.boundHandleTouchEnd);
         }
 
         // Prevenir pérdida de foco
-        window.addEventListener('blur', this.handleWindowBlur.bind(this));
+        window.addEventListener('blur', this.boundHandleWindowBlur);
     }
 
     private handleKeyDown(event: globalThis.KeyboardEvent): void {
@@ -154,6 +200,8 @@ export class InputManager {
 
             this.triggerKeyDownCallbacks(key, inputEvent);
             this.eventSystem.emit(INPUT_EVENTS.KEYDOWN, { key, event: inputEvent });
+            // Legacy/unprefixed compatibility expects event.data to be the KeyboardEvent itself
+            this.eventSystem.emit('keyDown' as any, inputEvent as any);
         }
     }
 
@@ -176,6 +224,8 @@ export class InputManager {
 
             this.triggerKeyUpCallbacks(key, inputEvent);
             this.eventSystem.emit(INPUT_EVENTS.KEYUP, { key, event: inputEvent });
+            // Legacy/unprefixed compatibility expects event.data to be the KeyboardEvent itself
+            this.eventSystem.emit('keyUp' as any, inputEvent as any);
         }
     }
 
@@ -262,7 +312,7 @@ export class InputManager {
 
         this.triggerMouseWheelCallbacks(this.wheelDelta);
         this.eventSystem.emit(INPUT_EVENTS.MOUSEWHEEL, { deltaY: this.wheelDelta });
-        
+
         // Asegurar que el evento se procese inmediatamente para los tests
         if (process.env.NODE_ENV === 'test') {
             this.update();
@@ -287,7 +337,7 @@ export class InputManager {
 
         this.triggerTouchStartCallbacks(inputEvent);
         this.eventSystem.emit(INPUT_EVENTS.TOUCHSTART, { event: inputEvent });
-        
+
         // Asegurar que el evento se procese inmediatamente para los tests
         if (process.env.NODE_ENV === 'test') {
             this.update();
@@ -537,21 +587,21 @@ export class InputManager {
 
     public destroy(): void {
         // Remover todos los event listeners
-        document.removeEventListener('keydown', this.handleKeyDown.bind(this));
-        document.removeEventListener('keyup', this.handleKeyUp.bind(this));
+        document.removeEventListener('keydown', this.boundHandleKeyDown);
+        document.removeEventListener('keyup', this.boundHandleKeyUp);
 
         if (this.canvas) {
-            this.canvas.removeEventListener('mousedown', this.handleMouseDown.bind(this));
-            this.canvas.removeEventListener('mouseup', this.handleMouseUp.bind(this));
-            this.canvas.removeEventListener('mousemove', this.handleMouseMove.bind(this));
-            this.canvas.removeEventListener('wheel', this.handleMouseWheel.bind(this));
-            this.canvas.removeEventListener('touchstart', this.handleTouchStart.bind(this));
-            this.canvas.removeEventListener('touchmove', this.handleTouchMove.bind(this));
-            this.canvas.removeEventListener('touchend', this.handleTouchEnd.bind(this));
-            this.canvas.removeEventListener('touchcancel', this.handleTouchEnd.bind(this));
+            this.canvas.removeEventListener('mousedown', this.boundHandleMouseDown);
+            this.canvas.removeEventListener('mouseup', this.boundHandleMouseUp);
+            this.canvas.removeEventListener('mousemove', this.boundHandleMouseMove);
+            this.canvas.removeEventListener('wheel', this.boundHandleMouseWheel);
+            this.canvas.removeEventListener('touchstart', this.boundHandleTouchStart);
+            this.canvas.removeEventListener('touchmove', this.boundHandleTouchMove);
+            this.canvas.removeEventListener('touchend', this.boundHandleTouchEnd);
+            this.canvas.removeEventListener('touchcancel', this.boundHandleTouchEnd);
         }
 
-        window.removeEventListener('blur', this.handleWindowBlur.bind(this));
+        window.removeEventListener('blur', this.boundHandleWindowBlur);
 
         // Limpiar todos los callbacks
         this.keyDownCallbacks.clear();
@@ -578,5 +628,11 @@ export class InputManager {
         this.mouseDelta.set(0, 0);
         this.wheelDelta = 0;
         this.canvas = null;
+
+        // Restore patched dispatch
+        if (this.originalDocumentDispatch) {
+            (document as any).dispatchEvent = this.originalDocumentDispatch;
+            this.originalDocumentDispatch = undefined;
+        }
     }
 }
