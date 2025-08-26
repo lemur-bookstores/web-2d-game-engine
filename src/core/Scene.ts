@@ -301,10 +301,15 @@ export class Scene {
         return {
             name: this.name,
             active: this.active,
-            entities: this.getEntities().map(entity => ({
-                id: entity.id,
-                // Additional entity serialization would go here
-            }))
+            entities: this.getEntities().map(entity => {
+                if (typeof entity.toJSON === 'function') {
+                    return entity.toJSON();
+                }
+                return {
+                    id: entity.id,
+                    // Additional entity serialization would go here
+                };
+            })
         };
     }
 
@@ -315,7 +320,20 @@ export class Scene {
         const scene = new Scene(data.name);
         scene.active = data.active || false;
 
-        // Entity deserialization would go here
+        // Basic entity deserialization: create Entities with id and set layer if present
+        if (Array.isArray(data.entities)) {
+            for (const e of data.entities) {
+                try {
+                    const entity = new (require('../ecs/Entity').Entity)(e.id);
+                    if (e.layer) entity.setLayer(e.layer);
+                    // Components deserialization is intentionally minimal here
+                    scene.addEntity(entity);
+                } catch (err) {
+                    // best-effort deserialization; skip on error
+                    continue;
+                }
+            }
+        }
 
         return scene;
     }
