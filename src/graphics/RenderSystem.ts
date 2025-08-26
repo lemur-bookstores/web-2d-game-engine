@@ -20,6 +20,7 @@ export class RenderSystem extends System {
     private textures = new Map<string, Texture>();
     private _backgroundColor: Color = new Color(0, 0, 0, 255);
     private camera: Camera2D | null = null;
+    private layerOrder: Array<{ name: string; bit: number; mask?: number }> | null = null;
 
     constructor(renderer: RenderStrategy) {
         super();
@@ -96,6 +97,10 @@ export class RenderSystem extends System {
 
     setCamera(camera: Camera2D | null): void {
         this.camera = camera;
+    }
+
+    setLayerOrder(layers: Array<{ name: string; bit: number; mask?: number }>) {
+        this.layerOrder = layers;
     }
 
     private renderEntity(entity: Entity): void {
@@ -203,12 +208,28 @@ export class RenderSystem extends System {
     }
 
     private sortEntitiesByZIndex(entities: Entity[]): Entity[] {
+        // If layerOrder is provided, sort by layer index first, then zIndex
         return entities.sort((a, b) => {
             const spriteA = a.getComponent<SpriteComponent>('sprite');
             const spriteB = b.getComponent<SpriteComponent>('sprite');
 
             const zIndexA = (spriteA as any)?.zIndex || 0;
             const zIndexB = (spriteB as any)?.zIndex || 0;
+
+            let layerIdxA = 0;
+            let layerIdxB = 0;
+
+            const layerA = a.getLayer ? a.getLayer() : null;
+            const layerB = b.getLayer ? b.getLayer() : null;
+
+            if (this.layerOrder) {
+                const idxA = this.layerOrder.findIndex(l => l.name === layerA || l.bit === layerA);
+                const idxB = this.layerOrder.findIndex(l => l.name === layerB || l.bit === layerB);
+                layerIdxA = idxA >= 0 ? idxA : this.layerOrder.length;
+                layerIdxB = idxB >= 0 ? idxB : this.layerOrder.length;
+            }
+
+            if (layerIdxA !== layerIdxB) return layerIdxA - layerIdxB;
 
             return zIndexA - zIndexB;
         });
