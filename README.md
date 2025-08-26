@@ -238,6 +238,24 @@ enemy.addComponent({
 
 // Añadir a la escena
 scene.addEntity(enemy);
+
+## Física (Box2D) — Fallback y configuración
+
+El motor soporta integración opcional con Box2D (WASM) para física realista. En entornos donde Box2D no está disponible (por ejemplo en la ejecución de tests sin WASM), el sistema entra en modo "fallback" y las llamadas a la física no lanzan errores; en su lugar las operaciones se ignorarán o se comportarán de forma mínima.
+
+Para habilitar Box2D y usar la implementación completa:
+
+1. Instala el paquete WASM compatible, por ejemplo:
+
+  npm install box2d-wasm
+
+2. Asegúrate de que tu bundler sirve y carga el binario WASM correctamente (Vite y bundlers modernos suelen manejar esto automáticamente si el paquete lo expone).
+
+3. Inicializa el motor normalmente. Si Box2D se carga correctamente, el `PhysicsWorld` usará Box2D y activará colisiones, joints y efectos físicos reales.
+
+Notas:
+- Las pruebas y el entorno de CI pueden correr sin Box2D — el código está diseñado para fallar de forma segura.
+- Si usas una variante diferente de Box2D (distintos empaquetados), algunas API o nombres de métodos pueden diferir; el motor aplica comprobaciones defensivas para soportar varias formas de binding, pero preferimos la práctica de usar `box2d-wasm` para compatibilidad máxima.
 ```
 
 #### Cargar Texturas
