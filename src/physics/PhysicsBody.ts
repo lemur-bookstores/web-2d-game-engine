@@ -57,6 +57,9 @@ export class PhysicsBody {
         };
         this.transform = new Transform();
         this.initialize();
+
+        // Always register with world for fallback operations
+        this.world.registerBody(this);
     }
 
     private initialize(): void {
@@ -225,6 +228,9 @@ export class PhysicsBody {
     }
 
     public destroy(): void {
+        // Unregister from world
+        this.world.unregisterBody(this);
+
         if (!this.body) {
             return;
         }
