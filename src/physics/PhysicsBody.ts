@@ -56,6 +56,14 @@ export class PhysicsBody {
 
     private initialize(): void {
         const box2d = this.world.getBox2D();
+        const w = this.world.getWorld();
+
+        // Defensive: if Box2D or world not available, skip initialization (fallback mode)
+        if (!box2d || !w) {
+            console.log('PhysicsBody: Box2D/world not available, skipping body creation');
+            return;
+        }
+
         const bodyDef = new box2d.b2BodyDef();
 
         switch (this.config.type) {
@@ -73,7 +81,7 @@ export class PhysicsBody {
         bodyDef.position = this.world.toB2Vec2(this.config.position!);
         bodyDef.angle = this.config.angle!;
 
-        this.body = this.world.getWorld().CreateBody(bodyDef);
+        this.body = w.CreateBody(bodyDef);
         this.body.SetUserData(this);
 
         const fixtureDef = new box2d.b2FixtureDef();
@@ -96,50 +104,85 @@ export class PhysicsBody {
     }
 
     public getPosition(): Vector2 {
+        if (!this.body) {
+            return this.config.position || new Vector2();
+        }
         const position = this.body.GetPosition();
         return this.world.fromB2Vec2(position);
     }
 
     public setPosition(position: Vector2): void {
+        if (!this.body) {
+            this.config.position = position;
+            return;
+        }
         this.body.SetTransform(this.world.toB2Vec2(position), this.body.GetAngle());
     }
 
     public getAngle(): number {
+        if (!this.body) {
+            return this.config.angle || 0;
+        }
         return this.body.GetAngle();
     }
 
     public setAngle(angle: number): void {
+        if (!this.body) {
+            this.config.angle = angle;
+            return;
+        }
         this.body.SetTransform(this.body.GetPosition(), angle);
     }
 
     public getVelocity(): Vector2 {
+        if (!this.body) {
+            return new Vector2();
+        }
         const velocity = this.body.GetLinearVelocity();
         return this.world.fromB2Vec2(velocity);
     }
 
     public setVelocity(velocity: Vector2): void {
+        if (!this.body) {
+            return;
+        }
         this.body.SetLinearVelocity(this.world.toB2Vec2(velocity));
     }
 
     public getAngularVelocity(): number {
+        if (!this.body) {
+            return 0;
+        }
         return this.body.GetAngularVelocity();
     }
 
     public setAngularVelocity(velocity: number): void {
+        if (!this.body) {
+            return;
+        }
         this.body.SetAngularVelocity(velocity);
     }
 
     public applyForce(force: Vector2, point?: Vector2): void {
+        if (!this.body) {
+            return;
+        }
         const worldPoint = point ? this.world.toB2Vec2(point) : this.body.GetWorldCenter();
         this.body.ApplyForce(this.world.toB2Vec2(force), worldPoint, true);
     }
 
     public applyImpulse(impulse: Vector2, point?: Vector2): void {
+        if (!this.body) {
+            return;
+        }
         const worldPoint = point ? this.world.toB2Vec2(point) : this.body.GetWorldCenter();
         this.body.ApplyLinearImpulse(this.world.toB2Vec2(impulse), worldPoint, true);
     }
 
     public applyTorque(torque: number): void {
+        if (!this.body) {
+            return;
+        }
         this.body.ApplyTorque(torque, true);
     }
 
@@ -151,7 +194,17 @@ export class PhysicsBody {
         return this.transform;
     }
 
+    public getB2Body(): Body | undefined {
+        return this.body;
+    }
+
     public destroy(): void {
-        this.world.getWorld().DestroyBody(this.body);
+        if (!this.body) {
+            return;
+        }
+        const world = this.world.getWorld();
+        if (world) {
+            world.DestroyBody(this.body);
+        }
     }
 }
