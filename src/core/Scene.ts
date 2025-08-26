@@ -7,6 +7,9 @@ export interface CollisionLayer {
     name: string;
     bit: number;
     mask?: number;
+    // Rendering properties
+    visible?: boolean;
+    opacity?: number; // 0..1
 }
 
 /**
@@ -247,23 +250,35 @@ export class Scene {
      * Initialize default collision layers
      */
     private initializeDefaultLayers(): void {
-        this.addLayer('default', 0x0001);
-        this.addLayer('player', 0x0002);
-        this.addLayer('enemy', 0x0004);
-        this.addLayer('ground', 0x0008);
-        this.addLayer('pickup', 0x0010);
-        this.addLayer('ui', 0x0020);
+        this.addLayer('default', 0x0001, undefined, true, 1);
+        this.addLayer('player', 0x0002, undefined, true, 1);
+        this.addLayer('enemy', 0x0004, undefined, true, 1);
+        this.addLayer('ground', 0x0008, undefined, true, 1);
+        this.addLayer('pickup', 0x0010, undefined, true, 1);
+        this.addLayer('ui', 0x0020, undefined, true, 1);
     }
 
     /**
      * Add a collision layer
      */
-    addLayer(name: string, bit: number, mask?: number): void {
+    addLayer(name: string, bit: number, mask?: number, visible: boolean = true, opacity: number = 1): void {
         this.layers.set(name, {
             name,
             bit,
-            mask: mask ?? 0xFFFF // Default: collide with everything
+            mask: mask ?? 0xFFFF, // Default: collide with everything
+            visible,
+            opacity
         });
+    }
+
+    setLayerVisibility(name: string, visible: boolean): void {
+        const layer = this.layers.get(name);
+        if (layer) layer.visible = visible;
+    }
+
+    setLayerOpacity(name: string, opacity: number): void {
+        const layer = this.layers.get(name);
+        if (layer) layer.opacity = Math.max(0, Math.min(1, opacity));
     }
 
     /**

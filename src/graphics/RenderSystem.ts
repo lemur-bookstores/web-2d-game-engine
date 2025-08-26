@@ -20,7 +20,7 @@ export class RenderSystem extends System {
     private textures = new Map<string, Texture>();
     private _backgroundColor: Color = new Color(0, 0, 0, 255);
     private camera: Camera2D | null = null;
-    private layerOrder: Array<{ name: string; bit: number; mask?: number }> | null = null;
+    private layerOrder: Array<{ name: string; bit: number; mask?: number; visible?: boolean; opacity?: number }> | null = null;
 
     constructor(renderer: RenderStrategy) {
         super();
@@ -81,10 +81,44 @@ export class RenderSystem extends System {
         // Sort entities by z-index if available (for rendering order)
         const sortedEntities = this.sortEntitiesByZIndex(renderableEntities);
 
-        // Render each entity
-        sortedEntities.forEach((entity) => {
-            this.renderEntity(entity);
-        });
+        // If we have a layer order, group entities by layer and respect visibility/opacity
+        if (this.layerOrder && this.layerOrder.length > 0) {
+            for (const layer of this.layerOrder) {
+                // skip invisible layers
+                if (layer.visible === false) continue;
+
+                // set global alpha if supported
+                if ('setGlobalAlpha' in this.renderer && layer.opacity !== undefined) {
+                    try {
+                        (this.renderer as any).setGlobalAlpha(layer.opacity);
+                    } catch (e) {
+                        // ignore if not supported
+                    }
+                }
+
+                // render entities that belong to this layer
+                sortedEntities.forEach((entity) => {
+                    const entityLayer = entity.getLayer ? entity.getLayer() : null;
+                    if (entityLayer === layer.name || entityLayer === layer.bit) {
+                        this.renderEntity(entity);
+                    }
+                });
+
+                // reset alpha after layer
+                if ('resetGlobalAlpha' in this.renderer) {
+                    try {
+                        (this.renderer as any).resetGlobalAlpha();
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            }
+        } else {
+            // No layer order provided - render all
+            sortedEntities.forEach((entity) => {
+                this.renderEntity(entity);
+            });
+        }
 
         // Reset transform if renderer supports it
         if (this.camera && 'resetTransform' in this.renderer) {
