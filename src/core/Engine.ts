@@ -1,6 +1,6 @@
 import { GameLoop, System } from './GameLoop';
 import { EventSystem } from './EventSystem';
-import { Scene } from './Scene';
+import { Scene, CollisionLayer } from './Scene';
 import { EngineConfig } from '../types';
 import { RenderSystem } from '../graphics/RenderSystem';
 import { Canvas2DRenderer } from '../graphics/Canvas2DRenderer';
@@ -21,6 +21,16 @@ export class Engine {
     private config: EngineConfig;
     private debugMode: boolean;
     private renderSystem: RenderSystem | null = null;
+
+    // Default collision layers (fallback when Scene doesn't define custom layers)
+    public readonly defaultLayers: CollisionLayer[] = [
+        { name: 'default', bit: 0x0001, mask: 0xFFFF },
+        { name: 'player', bit: 0x0002, mask: 0xFFFF },
+        { name: 'enemy', bit: 0x0004, mask: 0xFFFF },
+        { name: 'ground', bit: 0x0008, mask: 0xFFFF },
+        { name: 'pickup', bit: 0x0010, mask: 0xFFFF },
+        { name: 'ui', bit: 0x0020, mask: 0xFFFF }
+    ];
 
     // Engine stats
     private startTime: number = 0;
@@ -511,5 +521,24 @@ export class Engine {
     setDebugMode(enabled: boolean): void {
         this.debugMode = enabled;
         this.debugLog(`Debug mode ${enabled ? 'enabled' : 'disabled'}`);
+    }
+
+    /**
+     * Get layer mask from layer names (uses active scene layers or engine defaults)
+     */
+    getLayerMask(layerNames: string[]): number {
+        if (this.activeScene) {
+            return this.activeScene.getLayerMask(layerNames);
+        }
+
+        // Fallback to engine default layers
+        let mask = 0;
+        for (const name of layerNames) {
+            const layer = this.defaultLayers.find(l => l.name === name);
+            if (layer) {
+                mask |= layer.bit;
+            }
+        }
+        return mask;
     }
 }

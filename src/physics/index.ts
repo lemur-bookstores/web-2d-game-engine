@@ -5,3 +5,4 @@ export { PhysicsSystem } from './PhysicsSystem';
 export { PhysicsJoint, JointType } from './PhysicsJoint';
 export type { PhysicsBodyConfig } from './PhysicsBody';
 export type { JointConfig, RevoluteJointConfig, DistanceJointConfig, RopeJointConfig, PrismaticJointConfig, WeldJointConfig } from './PhysicsJoint';
+export type { RaycastOptions, RaycastResult, RaycastHit } from './Raycast';
