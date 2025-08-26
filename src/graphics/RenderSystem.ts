@@ -4,6 +4,7 @@ import { SpriteComponent } from './Sprite';
 import { RenderStrategy } from './Renderer';
 import { Texture } from './Texture';
 import { Vector2 } from '../math/Vector2';
+import { Camera2D } from './Camera2D';
 import { Color } from '../math/Color';
 
 export interface TransformComponent {
@@ -18,6 +19,8 @@ export class RenderSystem extends System {
     private renderer: RenderStrategy;
     private textures = new Map<string, Texture>();
     private _backgroundColor: Color = new Color(0, 0, 0, 255);
+    private camera: Camera2D | null = null;
+    private layerOrder: Array<{ name: string; bit: number; mask?: number; visible?: boolean; opacity?: number }> | null = null;
 
     constructor(renderer: RenderStrategy) {
         super();
@@ -59,6 +62,15 @@ export class RenderSystem extends System {
     update(entities: Entity[], _deltaTime: number): void {
         // Clear the screen
         this.renderer.clear();
+        // Apply camera transform if available
+        if (this.camera && 'applyCameraTransform' in this.renderer) {
+            (this.renderer as any).applyCameraTransform(
+                this.camera.position.x,
+                this.camera.position.y,
+                this.camera.zoom,
+                this.camera.rotation
+            );
+        }
 
         // Get all renderable entities
         const renderableEntities = this.getEntitiesWithComponents(
@@ -69,13 +81,60 @@ export class RenderSystem extends System {
         // Sort entities by z-index if available (for rendering order)
         const sortedEntities = this.sortEntitiesByZIndex(renderableEntities);
 
-        // Render each entity
-        sortedEntities.forEach((entity) => {
-            this.renderEntity(entity);
-        });
+        // If we have a layer order, group entities by layer and respect visibility/opacity
+        if (this.layerOrder && this.layerOrder.length > 0) {
+            for (const layer of this.layerOrder) {
+                // skip invisible layers
+                if (layer.visible === false) continue;
+
+                // set global alpha if supported
+                if ('setGlobalAlpha' in this.renderer && layer.opacity !== undefined) {
+                    try {
+                        (this.renderer as any).setGlobalAlpha(layer.opacity);
+                    } catch (e) {
+                        // ignore if not supported
+                    }
+                }
+
+                // render entities that belong to this layer
+                sortedEntities.forEach((entity) => {
+                    const entityLayer = entity.getLayer ? entity.getLayer() : null;
+                    if (entityLayer === layer.name || entityLayer === layer.bit) {
+                        this.renderEntity(entity);
+                    }
+                });
+
+                // reset alpha after layer
+                if ('resetGlobalAlpha' in this.renderer) {
+                    try {
+                        (this.renderer as any).resetGlobalAlpha();
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            }
+        } else {
+            // No layer order provided - render all
+            sortedEntities.forEach((entity) => {
+                this.renderEntity(entity);
+            });
+        }
+
+        // Reset transform if renderer supports it
+        if (this.camera && 'resetTransform' in this.renderer) {
+            (this.renderer as any).resetTransform();
+        }
 
         // Present the rendered frame
         this.renderer.present();
+    }
+
+    setCamera(camera: Camera2D | null): void {
+        this.camera = camera;
+    }
+
+    setLayerOrder(layers: Array<{ name: string; bit: number; mask?: number }>) {
+        this.layerOrder = layers;
     }
 
     private renderEntity(entity: Entity): void {
@@ -106,6 +165,21 @@ export class RenderSystem extends System {
             sprite.width * transform.scale.x,
             sprite.height * transform.scale.y
         );
+
+        // Simple viewport culling: if camera present, convert world pos to screen and
+        // skip rendering if outside viewport bounds with a small margin
+        if (this.camera) {
+            const screenPos = this.camera.worldToScreen(finalPosition);
+            const margin = 50; // allow some margin
+            if (
+                screenPos.x + finalSize.x / 2 < -margin ||
+                screenPos.x - finalSize.x / 2 > this.camera.viewport.width + margin ||
+                screenPos.y + finalSize.y / 2 < -margin ||
+                screenPos.y - finalSize.y / 2 > this.camera.viewport.height + margin
+            ) {
+                return; // culled
+            }
+        }
 
         // Render the sprite
         // console.log(`[RenderSystem] About to call renderer.drawSprite for entity ${entity.id}`);
@@ -168,12 +242,28 @@ export class RenderSystem extends System {
     }
 
     private sortEntitiesByZIndex(entities: Entity[]): Entity[] {
+        // If layerOrder is provided, sort by layer index first, then zIndex
         return entities.sort((a, b) => {
             const spriteA = a.getComponent<SpriteComponent>('sprite');
             const spriteB = b.getComponent<SpriteComponent>('sprite');
 
             const zIndexA = (spriteA as any)?.zIndex || 0;
             const zIndexB = (spriteB as any)?.zIndex || 0;
+
+            let layerIdxA = 0;
+            let layerIdxB = 0;
+
+            const layerA = a.getLayer ? a.getLayer() : null;
+            const layerB = b.getLayer ? b.getLayer() : null;
+
+            if (this.layerOrder) {
+                const idxA = this.layerOrder.findIndex(l => l.name === layerA || l.bit === layerA);
+                const idxB = this.layerOrder.findIndex(l => l.name === layerB || l.bit === layerB);
+                layerIdxA = idxA >= 0 ? idxA : this.layerOrder.length;
+                layerIdxB = idxB >= 0 ? idxB : this.layerOrder.length;
+            }
+
+            if (layerIdxA !== layerIdxB) return layerIdxA - layerIdxB;
 
             return zIndexA - zIndexB;
         });

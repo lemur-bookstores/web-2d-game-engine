@@ -3,6 +3,7 @@ import { EventSystem } from './EventSystem';
 import { Scene, CollisionLayer } from './Scene';
 import { EngineConfig } from '../types';
 import { RenderSystem } from '../graphics/RenderSystem';
+import { Camera2D } from '../graphics/Camera2D';
 import { Canvas2DRenderer } from '../graphics/Canvas2DRenderer';
 import { WebGLRenderer } from '../graphics/WebGLRenderer';
 import { DiagnosticRenderer } from '../graphics/DiagnosticRenderer';
@@ -21,6 +22,7 @@ export class Engine {
     private config: EngineConfig;
     private debugMode: boolean;
     private renderSystem: RenderSystem | null = null;
+    private activeCamera: Camera2D | null = null;
 
     // Default collision layers (fallback when Scene doesn't define custom layers)
     public readonly defaultLayers: CollisionLayer[] = [
@@ -70,6 +72,16 @@ export class Engine {
 
             // Setup game loop to use current scene entities
             this.setupGameLoopEntityProvider();
+
+            // If a render system was created during initializeRenderer, attach camera & layer order
+            if (this.renderSystem) {
+                this.renderSystem.setCamera(this.activeCamera);
+                if (this.activeScene) {
+                    this.renderSystem.setLayerOrder(this.activeScene.getLayers());
+                } else {
+                    this.renderSystem.setLayerOrder(this.defaultLayers);
+                }
+            }
 
             this.initialized = true;
             this.eventSystem.emit(ENGINE_EVENTS.INITIALIZED);
@@ -226,6 +238,35 @@ export class Engine {
             previousScene?.name || 'none',
             'to',
             this.activeScene?.name || 'none');
+
+        // Propagate layer order to render system
+        if (this.renderSystem) {
+            if (this.activeScene) {
+                this.renderSystem.setLayerOrder(this.activeScene.getLayers());
+            } else {
+                this.renderSystem.setLayerOrder(this.defaultLayers);
+            }
+        }
+    }
+
+    /**
+     * Create a new Camera2D instance and set it as active camera
+     */
+    createCamera(viewportWidth?: number, viewportHeight?: number): Camera2D {
+        const cam = new Camera2D(viewportWidth ?? this.config.width, viewportHeight ?? this.config.height);
+        this.setCamera(cam);
+        return cam;
+    }
+
+    setCamera(camera: Camera2D | null): void {
+        this.activeCamera = camera;
+        if (this.renderSystem) {
+            this.renderSystem.setCamera(camera);
+        }
+    }
+
+    getCamera(): Camera2D | null {
+        return this.activeCamera;
     }
 
     /**

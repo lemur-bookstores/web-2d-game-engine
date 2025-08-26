@@ -7,6 +7,9 @@ export interface CollisionLayer {
     name: string;
     bit: number;
     mask?: number;
+    // Rendering properties
+    visible?: boolean;
+    opacity?: number; // 0..1
 }
 
 /**
@@ -247,23 +250,35 @@ export class Scene {
      * Initialize default collision layers
      */
     private initializeDefaultLayers(): void {
-        this.addLayer('default', 0x0001);
-        this.addLayer('player', 0x0002);
-        this.addLayer('enemy', 0x0004);
-        this.addLayer('ground', 0x0008);
-        this.addLayer('pickup', 0x0010);
-        this.addLayer('ui', 0x0020);
+        this.addLayer('default', 0x0001, undefined, true, 1);
+        this.addLayer('player', 0x0002, undefined, true, 1);
+        this.addLayer('enemy', 0x0004, undefined, true, 1);
+        this.addLayer('ground', 0x0008, undefined, true, 1);
+        this.addLayer('pickup', 0x0010, undefined, true, 1);
+        this.addLayer('ui', 0x0020, undefined, true, 1);
     }
 
     /**
      * Add a collision layer
      */
-    addLayer(name: string, bit: number, mask?: number): void {
+    addLayer(name: string, bit: number, mask?: number, visible: boolean = true, opacity: number = 1): void {
         this.layers.set(name, {
             name,
             bit,
-            mask: mask ?? 0xFFFF // Default: collide with everything
+            mask: mask ?? 0xFFFF, // Default: collide with everything
+            visible,
+            opacity
         });
+    }
+
+    setLayerVisibility(name: string, visible: boolean): void {
+        const layer = this.layers.get(name);
+        if (layer) layer.visible = visible;
+    }
+
+    setLayerOpacity(name: string, opacity: number): void {
+        const layer = this.layers.get(name);
+        if (layer) layer.opacity = Math.max(0, Math.min(1, opacity));
     }
 
     /**
@@ -301,10 +316,15 @@ export class Scene {
         return {
             name: this.name,
             active: this.active,
-            entities: this.getEntities().map(entity => ({
-                id: entity.id,
-                // Additional entity serialization would go here
-            }))
+            entities: this.getEntities().map(entity => {
+                if (typeof entity.toJSON === 'function') {
+                    return entity.toJSON();
+                }
+                return {
+                    id: entity.id,
+                    // Additional entity serialization would go here
+                };
+            })
         };
     }
 
@@ -315,7 +335,20 @@ export class Scene {
         const scene = new Scene(data.name);
         scene.active = data.active || false;
 
-        // Entity deserialization would go here
+        // Basic entity deserialization: create Entities with id and set layer if present
+        if (Array.isArray(data.entities)) {
+            for (const e of data.entities) {
+                try {
+                    const entity = new (require('../ecs/Entity').Entity)(e.id);
+                    if (e.layer) entity.setLayer(e.layer);
+                    // Components deserialization is intentionally minimal here
+                    scene.addEntity(entity);
+                } catch (err) {
+                    // best-effort deserialization; skip on error
+                    continue;
+                }
+            }
+        }
 
         return scene;
     }
