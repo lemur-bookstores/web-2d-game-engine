@@ -409,16 +409,31 @@ Para más detalles, explora:
 - [src/types/](src/types/) para definiciones de tipos
 - [src/core/](src/core/) para la implementación del core
 
+## 📝 Notas de Versiones
+
+### v0.3.1 - Animations FSM & Compatibility (Actual)
+
+Principales cambios:
+
+- Librería Sprite-Sheet refactorizada en arquitectura hexagonal (detección grid/dinámica, adaptadores, facade).
+- Integración con `AssetManager` y nuevos métodos `SpriteSheet.fromFrames` & adapter de engine.
+- Sistema de Animación actualizado: correcciones de timing (frameTime vs duration), ping-pong tipado y UVs esperadas por tests.
+- Nueva Máquina de Estado de Animaciones (FSM): transiciones por condición, trigger y eventos; prioridad; eventos `onEnter`/`onExit`.
+- EventSystem: compatibilidad con nombres camelCase y versiones sin prefijo (ej. `entityCreated`, `keyDown`).
+- InputManager: compat legacy keyDown/keyUp + parche para eventos sintéticos en entorno de test.
+- AudioSystem: reproducción de SFX mapeados a frames vía evento `ANIMATION:FRAME`.
+- WebGLRenderer: tolerancia a contextos mock y fallback seguro a Canvas2D.
+- Tests: suite ampliada (FSM, audio+anim, sprite-sheet lib) – 52 tests.
+
+### v0.3.0 - Animaciones y Audio (Completado)
+
+- Sistema de animaciones por sprite sheet.
+- Sonidos mapeables a frames de animación (SFX puntuales) y soporte base de audio.
+- Integración inicial de eventos de animación (`FRAME`, `COMPLETE`).
+
 ## 📝 Roadmap
 
 ### Próximas Versiones
-
-- [ ] **v0.3.0 - Animaciones y Audio**
-
-  - Sistema de animaciones con sprites
-  - Máquina de estado para animaciones (Animation State Machine / FSM) para controlar transiciones, triggers y blending entre estados
-  - Web Audio API integrado
-  - Efectos de sonido y música de fondo
 
 - [ ] **v0.4.0 - Física Avanzada**
 
