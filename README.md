@@ -45,6 +45,7 @@ Un motor de juegos 2D ligero y modular para navegadores web, construido con Type
   - Sistema de sprites y texturas
   - Renderizado de formas básicas (rectángulos, círculos)
   - AssetManager para carga de recursos
+  - Sistema de capas y cámara 2D con seguimiento de entidades (v0.5.0)
 
 - **ECS (Entity-Component-System)**
 
@@ -53,9 +54,17 @@ Un motor de juegos 2D ligero y modular para navegadores web, construido con Type
   - Sistemas: Render, Input, Movement, Collision
 
 - **Input y Física**
+
   - InputManager con soporte para teclado, mouse y touch
   - Sistema de colisiones 2D
   - Componentes de física básicos
+
+- **Script Component (v0.5.1)**
+  - Soporte oficial para componentes de script enlazados a entidades
+  - Implementación de ScriptComponent, ScriptSystem y ScriptRegistry
+  - Serialización y rehidratación de scripts por nombre
+  - Ejemplo funcional en `examples/script-component/`
+  - Tests unitarios y de integración para lifecycle y registro
 
 ### 🚧 En Desarrollo
 
@@ -454,27 +463,19 @@ Principales cambios:
 ### Próximas Versiones
 
 - [ ] **v0.4.0 - Física Avanzada**
-
   - Integración Box2D WebAssembly
   - Joints y constraints
   - Partículas y efectos
 
-- [ ] **v0.5.0 - Layers y Camera**
+### Funcionalidades Deseadas
 
-  - Sistema de capas para organizar elementos por profundidad
-  - Camera2D con viewport, zoom y seguimiento de entidades
-  - Efectos de cámara (shake, smooth follow, transitions)
-  - Culling y estrategias de renderizado optimizadas: en lugar de un "culling automático" rígido, implementar una estrategia combinada que reduzca el coste y evite artefactos visuales:
-    - Culling por viewport con margen (loose-frustum) para evitar popping en bordes.
-    - Soporte opcional de particionado espacial (quadtree/grid) para limitar tests por frame.
-    - Culling por capas y LOD por distancia para reducir trabajo en objetos lejanos.
-    - Flags por entidad (por ejemplo `alwaysRender`, `cullingRadius`) para excepciones controladas.
-    - Batch de tests y actualizaciones perezosas (lazy updates) para minimizar sobrecarga en frames con muchos objetos.
-
-- [ ] **v0.6.0 - Herramientas**
-  - Editor de niveles web
-  - Inspector de entidades en tiempo real
-  - Profiler de rendimiento
+- [ ] WebGL renderer para mejor rendimiento
+- [ ] Sistema de UI/HUD integrado
+- [ ] Soporte para mobile con controles táctiles
+- [ ] Networking para juegos multijugador
+- [ ] Plugin system para extensiones
+- [ ] Parallax scrolling para fondos con múltiples capas
+- [ ] Modos de mezcla y efectos visuales por capa
 
 ### Funcionalidades Deseadas
 
