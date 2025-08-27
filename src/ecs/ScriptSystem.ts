@@ -1,12 +1,37 @@
 import { System } from '../core/GameLoop';
 import { ScriptComponent } from './ScriptComponent';
 import { scriptRegistry } from './ScriptRegistry';
+import { EventSystem } from '../core/EventSystem';
+import { SCENE_EVENTS, WORLD_EVENTS } from '../types/event-const';
 
 export class ScriptSystem implements System {
     requiredComponents = ['script'];
+    private eventSystem = EventSystem.getInstance();
+    private boundEntityRemoved = (event: any) => {
+        const entity = event.data?.entity;
+        if (!entity) return;
+        const sc = entity.getComponent('script') as ScriptComponent;
+        if (!sc || !sc.instance) return;
+        try {
+            // Persist runtime state if supported
+            if (sc.instance.toJSON) {
+                try { sc.state = sc.instance.toJSON(); } catch (_) { /* ignore */ }
+            }
+            sc.instance.destroy?.();
+        } catch (err) {
+            console.error('Error destroying script instance', err);
+        }
+        sc.instance = undefined;
+    };
 
     initialize?(): void {
-        // no-op for now
+        // Register for entity removal events to cleanup script instances
+        try {
+            this.eventSystem.on(SCENE_EVENTS.ENTITY_REMOVED, this.boundEntityRemoved);
+            this.eventSystem.on(WORLD_EVENTS.ENTITY_DESTROYED, this.boundEntityRemoved);
+        } catch (err) {
+            // event constants may not be available in some contexts; swallow
+        }
     }
 
     update(entities: any[], dt: number): void {
@@ -37,6 +62,12 @@ export class ScriptSystem implements System {
     }
 
     destroy(): void {
-        // Not tracked centrally; instances should be cleaned when entities/components are removed
+        // Remove listeners
+        try {
+            this.eventSystem.off(SCENE_EVENTS.ENTITY_REMOVED, this.boundEntityRemoved);
+            this.eventSystem.off(WORLD_EVENTS.ENTITY_DESTROYED, this.boundEntityRemoved);
+        } catch (err) {
+            // ignore
+        }
     }
 }

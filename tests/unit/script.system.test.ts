@@ -3,6 +3,8 @@ import { Entity } from '../../src/ecs/Entity';
 import { scriptRegistry } from '../../src/ecs/ScriptRegistry';
 import { ScriptSystem } from '../../src/ecs/ScriptSystem';
 import { createScriptComponent } from '../../src/ecs/ScriptComponent';
+import { EventSystem } from '../../src/core/EventSystem';
+import { SCENE_EVENTS } from '../../src/types/event-const';
 
 class TestScript {
     public initialized = false;
@@ -49,5 +51,30 @@ describe('ScriptSystem', () => {
         const sc = e.getComponent('script') as any;
         expect(sc.instance).toBeDefined();
         expect((sc.instance as any).updates).toBeGreaterThanOrEqual(3);
+    });
+
+    it('calls destroy on instance when entity removed event is emitted', () => {
+        const e = new Entity('e3');
+        e.addComponent(createScriptComponent('testscript'));
+
+        const ss = new ScriptSystem();
+        ss.initialize?.();
+        ss.update([e], 1 / 60);
+
+        const sc = e.getComponent('script') as any;
+        expect(sc.instance).toBeDefined();
+
+        // spy on destroy
+        let destroyed = false;
+        (sc.instance as any).destroy = () => { destroyed = true; };
+
+        const ev = EventSystem.getInstance();
+        ev.emit(SCENE_EVENTS.ENTITY_REMOVED, { scene: null, entity: e, entityId: e.id });
+
+        // process queued events (test env processes immediately)
+        ev.processEvents?.();
+
+        expect(destroyed).toBe(true);
+        ss.destroy();
     });
 });
