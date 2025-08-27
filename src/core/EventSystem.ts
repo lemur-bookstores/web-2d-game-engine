@@ -1,4 +1,4 @@
-import { GameEvent, EventCallback } from '../types';
+
 
 /**
  * Event system for handling game events using the Observer pattern

@@ -1,7 +1,6 @@
 import { GameLoop, System } from './GameLoop';
 import { EventSystem } from './EventSystem';
 import { Scene, CollisionLayer } from './Scene';
-import { EngineConfig } from '../types';
 import { RenderSystem } from '../graphics/RenderSystem';
 import { Camera2D } from '../graphics/Camera2D';
 import { Canvas2DRenderer } from '../graphics/Canvas2DRenderer';
