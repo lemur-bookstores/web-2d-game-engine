@@ -4,183 +4,396 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GameEngine 2D Examples</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
     <style>
-      body {
+      .card-header {
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      .card-header:hover {
+        background-color: #f8f9fa;
+      }
+      .card-header h2 {
         margin: 0;
-        padding: 20px;
-        font-family: Arial, sans-serif;
-        background-color: #1a1a1a;
-        color: white;
+        font-size: 1.25rem;
       }
-
-      .container {
-        max-width: 800px;
-        margin: 0 auto;
-        text-align: center;
-      }
-
-      h1 {
-        margin-bottom: 30px;
-      }
-
-      .examples {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        padding: 20px;
-      }
-
-      .example-card {
-        background-color: #2a2a2a;
-        border-radius: 8px;
-        padding: 20px;
-        text-align: left;
-        transition: transform 0.2s;
-      }
-
-      .example-card:hover {
-        transform: translateY(-5px);
-      }
-
-      .example-card h2 {
-        margin-top: 0;
-        color: #4caf50;
-      }
-
-      .example-card p {
-        margin: 10px 0;
-        color: #ccc;
-      }
-
-      .example-card a {
-        display: inline-block;
-        background-color: #4caf50;
-        color: white;
+      .btn-link {
+        color: #333;
         text-decoration: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        margin-top: 10px;
+        font-weight: 500;
       }
-
-      .example-card a:hover {
-        background-color: #45a049;
+      .btn-link:hover {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .btn-link:focus {
+        box-shadow: none;
+      }
+      .example-link {
+        margin-top: 15px;
+      }
+      .example-link a {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        padding: 8px 20px;
+        border-radius: 25px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+      .example-link a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        text-decoration: none;
+        color: white;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>🎮 GameEngine 2D Examples</h1>
+    <div class="container mt-4">
+      <h1 class="text-center mb-4">🎮 GameEngine 2D Examples</h1>
 
-      <div class="examples">
-        <div class="example-card">
-          <h2>🔰 Basic Core Example</h2>
-          <p>Demuestra las funcionalidades básicas del core del engine:</p>
-          <ul>
-            <li>Game Loop con fixed timestep</li>
-            <li>Sistema de eventos</li>
-            <li>Gestión de escenas</li>
-            <li>Entidades simples con movimiento</li>
-          </ul>
-          <a href="./basic-core/index.html">Ver Ejemplo</a>
+      <div class="accordion" id="gameExamplesAccordion">
+        <!-- Basic Core Example -->
+        <div class="card">
+          <div class="card-header" id="headingBasicCore">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapseBasicCore"
+                aria-expanded="true"
+                aria-controls="collapseBasicCore"
+              >
+                🔰 Basic Core Example
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapseBasicCore"
+            class="collapse show"
+            aria-labelledby="headingBasicCore"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>Demuestra las funcionalidades básicas del core del engine:</p>
+              <ul>
+                <li>Game Loop con fixed timestep</li>
+                <li>Sistema de eventos</li>
+                <li>Gestión de escenas</li>
+                <li>Entidades simples con movimiento</li>
+              </ul>
+              <div class="example-link">
+                <a href="./basic-core/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>🚀 Space Shooter</h2>
-          <p>Un juego clásico de disparos espaciales que demuestra:</p>
-          <ul>
-            <li>Sistema de sprites y colisiones</li>
-            <li>Gestión de eventos de entrada</li>
-            <li>Sistema de puntuación</li>
-            <li>Gestión de proyectiles</li>
-          </ul>
-          <a href="./space-shooter/index.html">Ver Ejemplo</a>
+        <!-- Space Shooter -->
+        <div class="card">
+          <div class="card-header" id="headingSpaceShooter">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapseSpaceShooter"
+                aria-expanded="false"
+                aria-controls="collapseSpaceShooter"
+              >
+                🚀 Space Shooter
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapseSpaceShooter"
+            class="collapse"
+            aria-labelledby="headingSpaceShooter"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>Un juego clásico de disparos espaciales que demuestra:</p>
+              <ul>
+                <li>Sistema de sprites y colisiones</li>
+                <li>Gestión de eventos de entrada</li>
+                <li>Sistema de puntuación</li>
+                <li>Gestión de proyectiles</li>
+              </ul>
+              <div class="example-link">
+                <a href="./space-shooter/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>🎮 Platformer</h2>
-          <p>Un juego de plataformas que muestra:</p>
-          <ul>
-            <li>Sistema de física</li>
-            <li>Soporte para tilemaps</li>
-            <li>Sistema de animaciones</li>
-            <li>Colisiones con plataformas</li>
-          </ul>
-          <a href="./platformer/index.html">Ver Ejemplo</a>
+        <!-- Platformer -->
+        <div class="card">
+          <div class="card-header" id="headingPlatformer">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapsePlatformer"
+                aria-expanded="false"
+                aria-controls="collapsePlatformer"
+              >
+                🎮 Platformer
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapsePlatformer"
+            class="collapse"
+            aria-labelledby="headingPlatformer"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>Un juego de plataformas que muestra:</p>
+              <ul>
+                <li>Sistema de física</li>
+                <li>Soporte para tilemaps</li>
+                <li>Sistema de animaciones</li>
+                <li>Colisiones con plataformas</li>
+              </ul>
+              <div class="example-link">
+                <a href="./platformer/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>⚡ Physics Platformer</h2>
-          <p>
-            Un juego de plataformas avanzado con sistema de física completo:
-          </p>
-          <ul>
-            <li>Integración con Box2D physics engine</li>
-            <li>Sistema de raycast y detección de colisiones</li>
-            <li>Collision layers y filtering</li>
-            <li>Física realista con gravedad y fricción</li>
-          </ul>
-          <a href="./physics-platformer/index.html">Ver Ejemplo</a>
+        <!-- Physics Platformer -->
+        <div class="card">
+          <div class="card-header" id="headingPhysicsPlatformer">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapsePhysicsPlatformer"
+                aria-expanded="false"
+                aria-controls="collapsePhysicsPlatformer"
+              >
+                ⚡ Physics Platformer
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapsePhysicsPlatformer"
+            class="collapse"
+            aria-labelledby="headingPhysicsPlatformer"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>
+                Un juego de plataformas avanzado con sistema de física completo:
+              </p>
+              <ul>
+                <li>Integración con Box2D physics engine</li>
+                <li>Sistema de raycast y detección de colisiones</li>
+                <li>Collision layers y filtering</li>
+                <li>Física realista con gravedad y fricción</li>
+              </ul>
+              <div class="example-link">
+                <a href="./physics-platformer/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>🧱 Brick Breaker</h2>
-          <p>Un juego clásico de romper ladrillos que incluye:</p>
-          <ul>
-            <li>Sistema de colisiones</li>
-            <li>Gestión de niveles</li>
-            <li>Física básica</li>
-          </ul>
-          <a href="./brick-breaker/index.html">Ver Ejemplo</a>
+        <!-- Brick Breaker -->
+        <div class="card">
+          <div class="card-header" id="headingBrickBreaker">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapseBrickBreaker"
+                aria-expanded="false"
+                aria-controls="collapseBrickBreaker"
+              >
+                🧱 Brick Breaker
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapseBrickBreaker"
+            class="collapse"
+            aria-labelledby="headingBrickBreaker"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>Un juego clásico de romper ladrillos que incluye:</p>
+              <ul>
+                <li>Sistema de colisiones</li>
+                <li>Gestión de niveles</li>
+                <li>Física básica</li>
+              </ul>
+              <div class="example-link">
+                <a href="./brick-breaker/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>🧠 Memory Game</h2>
-          <p>Un juego de memoria que demuestra:</p>
-          <ul>
-            <li>Gestión de estados del juego</li>
-            <li>Interacción con el usuario</li>
-            <li>Animaciones simples</li>
-          </ul>
-          <a href="./memory-game/index.html">Ver Ejemplo</a>
+        <!-- Memory Game -->
+        <div class="card">
+          <div class="card-header" id="headingMemoryGame">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapseMemoryGame"
+                aria-expanded="false"
+                aria-controls="collapseMemoryGame"
+              >
+                🧠 Memory Game
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapseMemoryGame"
+            class="collapse"
+            aria-labelledby="headingMemoryGame"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>Un juego de memoria que demuestra:</p>
+              <ul>
+                <li>Gestión de estados del juego</li>
+                <li>Interacción con el usuario</li>
+                <li>Animaciones simples</li>
+              </ul>
+              <div class="example-link">
+                <a href="./memory-game/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>🕹️ Simple Platformer</h2>
-          <p>Un juego de plataformas básico que incluye:</p>
-          <ul>
-            <li>Física simplificada</li>
-            <li>Colisiones básicas</li>
-            <li>Movimiento de personajes</li>
-          </ul>
-          <a href="./simple-platformer/index.html">Ver Ejemplo</a>
+        <!-- Simple Platformer -->
+        <div class="card">
+          <div class="card-header" id="headingSimplePlatformer">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapseSimplePlatformer"
+                aria-expanded="false"
+                aria-controls="collapseSimplePlatformer"
+              >
+                🕹️ Simple Platformer
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapseSimplePlatformer"
+            class="collapse"
+            aria-labelledby="headingSimplePlatformer"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>Un juego de plataformas básico que incluye:</p>
+              <ul>
+                <li>Física simplificada</li>
+                <li>Colisiones básicas</li>
+                <li>Movimiento de personajes</li>
+              </ul>
+              <div class="example-link">
+                <a href="./simple-platformer/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>📐 Layers & Camera</h2>
-          <p>
-            Demostración de capas de render y una cámara 2D que sigue al
-            jugador:
-          </p>
-          <ul>
-            <li>Capas: background / player / foreground</li>
-            <li>Cámara que sigue al jugador con suavizado (lerp)</li>
-            <li>Orden y opacidad de capas</li>
-          </ul>
-          <a href="./layers-camera/index.html">Ver Ejemplo</a>
+        <!-- Layers & Camera -->
+        <div class="card">
+          <div class="card-header" id="headingLayersCamera">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapseLayersCamera"
+                aria-expanded="false"
+                aria-controls="collapseLayersCamera"
+              >
+                📐 Layers & Camera
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapseLayersCamera"
+            class="collapse"
+            aria-labelledby="headingLayersCamera"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>
+                Demostración de capas de render y una cámara 2D que sigue al
+                jugador:
+              </p>
+              <ul>
+                <li>Capas: background / player / foreground</li>
+                <li>Cámara que sigue al jugador con suavizado (lerp)</li>
+                <li>Orden y opacidad de capas</li>
+              </ul>
+              <div class="example-link">
+                <a href="./layers-camera/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="example-card">
-          <h2>📜 Script Component</h2>
-          <p>
-            Ejemplo de uso de ScriptComponent para enlazar lógica personalizada
-            a entidades:
-          </p>
-          <ul>
-            <li>Registro y ejecución de scripts</li>
-            <li>Control de entidades mediante scripts</li>
-            <li>Serialización y rehidratación de estado</li>
-          </ul>
-          <a href="./script-component/index.html">Ver Ejemplo</a>
+        <!-- Script Component -->
+        <div class="card">
+          <div class="card-header" id="headingScriptComponent">
+            <h2>
+              <button
+                class="btn btn-link btn-block text-left collapsed"
+                type="button"
+                data-toggle="collapse"
+                data-target="#collapseScriptComponent"
+                aria-expanded="false"
+                aria-controls="collapseScriptComponent"
+              >
+                📜 Script Component
+              </button>
+            </h2>
+          </div>
+          <div
+            id="collapseScriptComponent"
+            class="collapse"
+            aria-labelledby="headingScriptComponent"
+            data-parent="#gameExamplesAccordion"
+          >
+            <div class="card-body">
+              <p>
+                Ejemplo de uso de ScriptComponent para enlazar lógica
+                personalizada a entidades:
+              </p>
+              <ul>
+                <li>Registro y ejecución de scripts</li>
+                <li>Control de entidades mediante scripts</li>
+                <li>Serialización y rehidratación de estado</li>
+              </ul>
+              <div class="example-link">
+                <a href="./script-component/index.html">Ver Ejemplo</a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
