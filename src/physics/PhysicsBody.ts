@@ -1,4 +1,4 @@
-import { Body } from 'box2d-wasm';
+import type { Body } from 'box2d-wasm';
 import { Vector2 } from '../math/Vector2';
 import { Transform } from '../math/Transform';
 import { PhysicsWorld } from './PhysicsWorld';
@@ -29,6 +29,18 @@ export interface PhysicsBodyConfig {
     // collision filtering
     collisionCategory?: number; // categoryBits
     collisionMask?: number; // maskBits
+}
+
+// UserData wrapper para Box2D-wasm
+const bodyUserData = new WeakMap<Body, any>();
+
+// Extensiones seguras
+export function setBodyUserData(body: Body, data: any) {
+    bodyUserData.set(body, data);
+}
+
+export function getBodyUserData(body: Body): any {
+    return bodyUserData.get(body);
 }
 
 export class PhysicsBody {
@@ -90,7 +102,7 @@ export class PhysicsBody {
         bodyDef.angle = this.config.angle!;
 
         this.body = w.CreateBody(bodyDef);
-        this.body.SetUserData(this);
+        setBodyUserData(this.body, this);
 
         const fixtureDef = new box2d.b2FixtureDef();
         fixtureDef.density = this.config.density!;

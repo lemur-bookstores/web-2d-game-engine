@@ -1,3 +1,10 @@
+/// <reference types="vite/client" />
+
+declare module "*.wasm?url" {
+    const src: string;
+    export default src;
+}
+
 /**
  * Type definitions for the GameEngine 2D
  */

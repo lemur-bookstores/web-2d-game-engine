@@ -50,7 +50,7 @@ declare module 'box2d-wasm' {
         ApplyTorque(torque: number, wake: boolean): void;
         GetWorldCenter(): Vec2;
         SetUserData(data: any): void;
-        GetUserData(): any;
+        GetUserData?(): any;
     }
 
     export class FixtureDef {
