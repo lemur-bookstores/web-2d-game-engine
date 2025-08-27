@@ -471,10 +471,14 @@ Principales cambios:
     - Flags por entidad (por ejemplo `alwaysRender`, `cullingRadius`) para excepciones controladas.
     - Batch de tests y actualizaciones perezosas (lazy updates) para minimizar sobrecarga en frames con muchos objetos.
 
-- [ ] **v0.6.0 - Herramientas**
-  - Editor de niveles web
-  - Inspector de entidades en tiempo real
-  - Profiler de rendimiento
+- [ ] **v0.5.1 - Script Component**
+
+  - Añadir soporte oficial para componentes de 'script' que enlacen comportamiento a entidades.
+  - Diseñar e implementar `ScriptComponent`, `ScriptSystem` y `ScriptRegistry` para crear/rehidratar scripts por nombre.
+  - Permitir serialización de scripts mediante `scriptName` + estado serializable.
+  - Evitar ejecuciones dinámicas inseguras (no usar eval en producción); soportar creación por fábrica/clase registrada.
+  - Tests: unitarios para lifecycle (init, update, destroy), serialización/re-hidratación y rendimiento básico.
+  - Ejemplo: crear `PlayerController` como script reutilizable y documentar su uso en `examples/`.
 
 ### Funcionalidades Deseadas
 
