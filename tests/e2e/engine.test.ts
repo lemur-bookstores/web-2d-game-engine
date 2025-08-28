@@ -141,11 +141,11 @@ describe('Game Engine Tests', () => {
 
     describe('Error Handling', () => {
         it('should handle initialization errors gracefully', async () => {
-            let errorReceived = false;
-            const eventSystem = EventSystem.getInstance();
-            eventSystem.on(ENGINE_EVENTS.INITIALIZATION_ERROR, () => {
-                errorReceived = true;
-            });
+            // let errorReceived = false;
+            // const eventSystem = EventSystem.getInstance();
+            // eventSystem.on(ENGINE_EVENTS.INITIALIZATION_ERROR, () => {
+            //     errorReceived = true;
+            // });
 
             // Test should throw on constructor, not on initialize
             expect(() => {

@@ -43,12 +43,59 @@ export class AssetManager {
     private assets: Map<string, Asset>;
     private loader: AssetLoader;
     private eventSystem: EventSystem;
+    // asset type mappers / metadata
+    private assetTypeMappers: Array<{
+        typeName: string;
+        predicate: (v: any) => boolean;
+        normalize: (v: any) => any;
+        description?: string;
+    }> = [];
 
     private constructor() {
         this.assets = new Map();
         this.loader = AssetLoader.getInstance();
         this.eventSystem = EventSystem.getInstance();
+        this.registerBuiltInAssetMappers();
         this.setupEventListeners();
+    }
+
+    /**
+     * Register a custom asset type mapper (for editor/inspector normalization)
+     */
+    registerAssetMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any, description?: string): void {
+        this.assetTypeMappers.push({ typeName, predicate, normalize, description });
+    }
+
+    getRegisteredAssetTypes(): string[] {
+        // return unique type names
+        const names = this.assetTypeMappers.map(m => m.typeName);
+        return Array.from(new Set(names));
+    }
+
+    getAssetMetadata(typeName: string): { type: string; description?: string } | undefined {
+        const m = this.assetTypeMappers.find(x => x.typeName === typeName);
+        if (!m) return undefined;
+        return { type: m.typeName, description: m.description };
+    }
+
+    normalizeAssetData(typeName: string, data: any): any {
+        for (const m of this.assetTypeMappers) {
+            if (m.typeName === typeName || m.predicate(data)) {
+                try { return m.normalize(data); } catch (_) { return data; }
+            }
+        }
+        return data;
+    }
+
+    private registerBuiltInAssetMappers(): void {
+        // texture
+        this.registerAssetMapper('texture', (v: any) => v && v.width && v.height, (v: any) => ({ width: v.width, height: v.height }), 'Image/Texture');
+        // spritesheet
+        this.registerAssetMapper('spritesheet', (v: any) => v && typeof v.getFrameCount === 'function', (v: any) => ({ frames: (v.getFrameCount ? v.getFrameCount() : 0) }), 'SpriteSheet');
+        // audio
+        this.registerAssetMapper('audio', (v: any) => v && (v instanceof AudioBuffer || (v as any).duration !== undefined), (v: any) => ({ duration: (v as any).duration ?? 0 }), 'AudioBuffer / Audio');
+        // json
+        this.registerAssetMapper('json', (v: any) => typeof v === 'object' && !v.getFrameCount && !(v as any).width, (v: any) => ({ keys: Object.keys(v) }), 'JSON data');
     }
 
     static getInstance(): AssetManager {

@@ -21,6 +21,36 @@ export class RenderSystem extends System {
     private _backgroundColor: Color = new Color(0, 0, 0, 255);
     private camera: Camera2D | null = null;
     private layerOrder: Array<{ name: string; bit: number; mask?: number; visible?: boolean; opacity?: number }> | null = null;
+    // renderer metadata/mappers
+    private rendererMappers: Array<{
+        typeName: string;
+        predicate: (v: any) => boolean;
+        normalize: (v: any) => any;
+        description?: string;
+    }> = [];
+
+    registerRendererMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any, description?: string): void {
+        this.rendererMappers.push({ typeName, predicate, normalize, description });
+    }
+
+    getRegisteredRendererTypes(): string[] {
+        return Array.from(new Set(this.rendererMappers.map(m => m.typeName)));
+    }
+
+    getRendererMetadata(typeName: string): { type: string; description?: string } | undefined {
+        const m = this.rendererMappers.find(x => x.typeName === typeName);
+        if (!m) return undefined;
+        return { type: m.typeName, description: m.description };
+    }
+
+    normalizeRendererData(typeName: string, data: any): any {
+        for (const m of this.rendererMappers) {
+            if (m.typeName === typeName || m.predicate(data)) {
+                try { return m.normalize(data); } catch (_) { return data; }
+            }
+        }
+        return data;
+    }
 
     constructor(renderer: RenderStrategy) {
         super();

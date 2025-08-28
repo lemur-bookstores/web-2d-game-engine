@@ -10,6 +10,36 @@ export class AudioManager {
     private buffers = new Map<string, AudioBuffer>();
     private playbacks = new Map<string, PlaybackHandle>();
     private groupGains = new Map<string, GainNode>();
+    // audio metadata/mappers
+    private audioMappers: Array<{
+        typeName: string;
+        predicate: (v: any) => boolean;
+        normalize: (v: any) => any;
+        description?: string;
+    }> = [];
+
+    registerAudioMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any, description?: string): void {
+        this.audioMappers.push({ typeName, predicate, normalize, description });
+    }
+
+    getRegisteredAudioTypes(): string[] {
+        return Array.from(new Set(this.audioMappers.map(m => m.typeName)));
+    }
+
+    getAudioMetadata(typeName: string): { type: string; description?: string } | undefined {
+        const m = this.audioMappers.find(x => x.typeName === typeName);
+        if (!m) return undefined;
+        return { type: m.typeName, description: m.description };
+    }
+
+    normalizeAudioData(typeName: string, data: any): any {
+        for (const m of this.audioMappers) {
+            if (m.typeName === typeName || m.predicate(data)) {
+                try { return m.normalize(data); } catch (_) { return data; }
+            }
+        }
+        return data;
+    }
 
     private constructor() {
         try {

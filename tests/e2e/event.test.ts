@@ -3,6 +3,7 @@ import { Entity } from '../../src/ecs/Entity';
 import { System } from '../../src/ecs/System';
 import { World } from '../../src/ecs/World';
 import { EventSystem } from '../../src/core/EventSystem';
+import { TEST_EVENTS } from '../../src/types/event-const';
 
 describe('Event System Tests', () => {
     let eventSystem: EventSystem;
@@ -28,10 +29,10 @@ describe('Event System Tests', () => {
         };
 
         // Subscribe to test event
-        eventSystem.on('testEvent', handler);
+        eventSystem.on(TEST_EVENTS.TESTONE, handler);
 
         // Emit test event
-        eventSystem.emit('testEvent', { type: 'testEvent' });
+        eventSystem.emit(TEST_EVENTS.TESTONE, { type: TEST_EVENTS.TESTONE });
 
         // Check if handler was called
         expect(eventReceived).toBe(true);
@@ -49,10 +50,10 @@ describe('Event System Tests', () => {
             handler2Called = true;
         };
 
-        eventSystem.on('multiEvent', handler1);
-        eventSystem.on('multiEvent', handler2);
+        eventSystem.on(TEST_EVENTS.TESTTWO, handler1);
+        eventSystem.on(TEST_EVENTS.TESTTWO, handler2);
 
-        eventSystem.emit('multiEvent', { type: 'multiEvent' });
+        eventSystem.emit(TEST_EVENTS.TESTTWO, { type: 'multiEvent' });
 
         expect(handler1Called).toBe(true);
         expect(handler2Called).toBe(true);
@@ -66,11 +67,11 @@ describe('Event System Tests', () => {
         };
 
         // Subscribe and immediately unsubscribe
-        eventSystem.on('unsubscribeTest', handler);
-        eventSystem.off('unsubscribeTest', handler);
+        eventSystem.on(TEST_EVENTS.TESTTHREE, handler);
+        eventSystem.off(TEST_EVENTS.TESTTHREE, handler);
 
         // Emit event
-        eventSystem.emit('unsubscribeTest', {});
+        eventSystem.emit(TEST_EVENTS.TESTTHREE, {});
 
         expect(callCount).toBe(0);
     });
@@ -79,7 +80,7 @@ describe('Event System Tests', () => {
         const world = new World();
         let entityCreatedReceived = false;
 
-        eventSystem.on('entityCreated', () => {
+        eventSystem.on(TEST_EVENTS.TESTFOUR, () => {
             entityCreatedReceived = true;
         });
 
@@ -97,12 +98,12 @@ describe('Event System Tests', () => {
 
             constructor() {
                 super();
-                eventSystem.on('testSystemEvent', () => {
+                eventSystem.on(TEST_EVENTS.TESTSIX, () => {
                     systemProcessed = true;
                 });
             }
 
-            update(entities: Entity[], deltaTime: number): void {
+            update(_entities: Entity[], _deltaTime: number): void {
                 // System logic here
             }
         }
@@ -112,7 +113,7 @@ describe('Event System Tests', () => {
         world.addSystem(testSystem);
 
         // Emit the test event
-        eventSystem.emit('testSystemEvent', {});
+        eventSystem.emit(TEST_EVENTS.TESTSIX, {});
 
         expect(systemProcessed).toBe(true);
     });

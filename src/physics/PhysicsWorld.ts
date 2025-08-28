@@ -66,6 +66,43 @@ export class PhysicsWorld {
     private constructor() {
         this.gravity = new Vector2(0, 9.81);
         this.eventSystem = EventSystem.getInstance();
+        this.registerBuiltInPhysicsMappers();
+    }
+
+    // Physics type mappers / metadata
+    private physicsTypeMappers: Array<{
+        typeName: string;
+        predicate: (v: any) => boolean;
+        normalize: (v: any) => any;
+        description?: string;
+    }> = [];
+
+    registerPhysicsMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any, description?: string): void {
+        this.physicsTypeMappers.push({ typeName, predicate, normalize, description });
+    }
+
+    getRegisteredPhysicsTypes(): string[] {
+        return Array.from(new Set(this.physicsTypeMappers.map(m => m.typeName)));
+    }
+
+    getPhysicsMetadata(typeName: string): { type: string; description?: string } | undefined {
+        const m = this.physicsTypeMappers.find(x => x.typeName === typeName);
+        if (!m) return undefined;
+        return { type: m.typeName, description: m.description };
+    }
+
+    normalizePhysicsData(typeName: string, data: any): any {
+        for (const m of this.physicsTypeMappers) {
+            if (m.typeName === typeName || m.predicate(data)) {
+                try { return m.normalize(data); } catch (_) { return data; }
+            }
+        }
+        return data;
+    }
+
+    private registerBuiltInPhysicsMappers(): void {
+        // Physics body config summary
+        this.registerPhysicsMapper('physicsBody', (v: any) => v && (v.width !== undefined || v.radius !== undefined || v.shape !== undefined), (v: any) => ({ shape: v.shape || (v.radius ? 'circle' : 'box'), width: v.width ?? null, height: v.height ?? null, radius: v.radius ?? null }), 'Physics body config');
     }
 
     public static async getInstance(): Promise<PhysicsWorld> {
