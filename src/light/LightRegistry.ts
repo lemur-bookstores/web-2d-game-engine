@@ -4,6 +4,8 @@ export class LightRegistry {
     private lightTypes = new Map<string, LightConstructor>();
     private metadata = new Map<string, LightMetadata>();
     private instanceStates = new Map<LightInstance, Map<string, any>>();
+    // Optional resolver to map layer names to bitmasks (provided by Scene or caller)
+    private layerResolver?: (name: string) => number | undefined;
 
     // Type mappers específicos para iluminación
     private typeMappers: Array<{
@@ -222,7 +224,17 @@ export class LightRegistry {
         proxy.setAllProperties = (state: LightState) => {
             for (const [key, value] of Object.entries(state)) {
                 if (stateMap.has(key)) {
-                    const validatedValue = this.validateLightProperty(key, value);
+                    let finalValue = value;
+
+                    // Normalizar destino de layer si corresponde
+                    if (key === 'layer' || key === 'layerMask') {
+                        const normalized = this.normalizeLayerTarget(state['layer'] ?? state['layerMask']);
+                        if (normalized.layer !== undefined && stateMap.has('layer')) stateMap.set('layer', normalized.layer);
+                        if (normalized.layerMask !== undefined && stateMap.has('layerMask')) stateMap.set('layerMask', normalized.layerMask);
+                        continue; // already applied
+                    }
+
+                    const validatedValue = this.validateLightProperty(key, finalValue);
                     stateMap.set(key, this.deepClone(validatedValue));
                 }
             }
@@ -239,6 +251,14 @@ export class LightRegistry {
             if (!stateMap.has(name)) {
                 throw new Error(`Propiedad ${name} no existe en luz ${lightType}`);
             }
+            // If setting a layer-related property, normalize and apply both forms when possible
+            if (name === 'layer' || name === 'layerMask') {
+                const normalized = this.normalizeLayerTarget(name === 'layer' ? value : stateMap.get('layer') ?? value);
+                if (normalized.layer !== undefined && stateMap.has('layer')) stateMap.set('layer', normalized.layer);
+                if (normalized.layerMask !== undefined && stateMap.has('layerMask')) stateMap.set('layerMask', normalized.layerMask);
+                return;
+            }
+
             const validatedValue = this.validateLightProperty(name, value);
             stateMap.set(name, validatedValue);
         };
@@ -283,6 +303,67 @@ export class LightRegistry {
         this.instanceStates.delete(instance);
     }
 
+    /**
+     * Normaliza un objetivo de layer proporcionado por el usuario.
+     * Acepta:
+     * - string: nombre de layer -> returns { layer: string }
+     * - number: bitmask -> returns { layerMask: number }
+     * - array of strings -> returns { layerMask: number } (caller must map names to bits)
+     */
+    normalizeLayerTarget(target: any): { layer?: string, layerMask?: number } {
+        if (target === undefined || target === null) return {};
+        // String: prefer to resolve to both name and mask when resolver exists
+        if (typeof target === 'string') {
+            const name = target;
+            const bit = this.layerResolver ? this.layerResolver(name) : undefined;
+            return bit !== undefined ? { layer: name, layerMask: bit } : { layer: name };
+        }
+        // Number: direct bitmask
+        if (typeof target === 'number') return { layerMask: target };
+        // Array: could be array of names or numbers
+        if (Array.isArray(target)) {
+            const nums = target.filter(t => typeof t === 'number') as number[];
+            const strs = target.filter(t => typeof t === 'string') as string[];
+
+            // Combine numeric masks
+            let mask = 0;
+            if (nums.length > 0) mask = nums.reduce((a, b) => a | b, 0);
+
+            if (strs.length > 0) {
+                // If we have a resolver, resolve names and combine
+                if (this.layerResolver) {
+                    const nameMask = strs.reduce((acc, n) => {
+                        const b = this.layerResolver!(n);
+                        return acc | (b ?? 0);
+                    }, 0);
+                    mask = mask | nameMask;
+                    return { layerMask: mask };
+                }
+
+                // No resolver: if we already had numeric masks, return them; otherwise fallback to first name
+                if (mask !== 0) return { layerMask: mask };
+                return { layer: strs[0] };
+            }
+
+            if (mask !== 0) return { layerMask: mask };
+        }
+        // If object with name/bit fields
+        if (typeof target === 'object') {
+            if ('bit' in target && typeof target.bit === 'number') {
+                return { layerMask: target.bit };
+            }
+            if ('name' in target && typeof target.name === 'string') {
+                const name = target.name;
+                const bit = this.layerResolver ? this.layerResolver(name) : undefined;
+                return bit !== undefined ? { layer: name, layerMask: bit } : { layer: name };
+            }
+        }
+        // fallback try to coerce
+        const asNum = Number(target);
+        if (!Number.isNaN(asNum)) return { layerMask: asNum };
+        return { layer: String(target) };
+    }
+
     private deepClone(obj: any): any {
         if (obj === null || typeof obj !== 'object') return obj;
         if (obj instanceof Date) return new Date(obj.getTime());
@@ -297,5 +378,13 @@ export class LightRegistry {
             return cloned;
         }
         return obj;
+    }
+
+    /**
+     * Permite registrar un resolver externo para convertir nombres de layer a bitmasks.
+     * Ejemplo: lightRegistry.setLayerResolver(name => scene.getLayer(name)?.bit)
+     */
+    setLayerResolver(resolver: (name: string) => number | undefined): void {
+        this.layerResolver = resolver;
     }
 }

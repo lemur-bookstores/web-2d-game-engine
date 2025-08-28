@@ -11,6 +11,9 @@ export class PointLight implements LightInstance {
     radius: number = 100;
     enabled: boolean = true;
     castShadows: boolean = true;
+    // Layer targeting (name and resolved mask) - normalized via LightRegistry
+    layer: string = '';
+    layerMask: number = 0;
 
     // Propiedades específicas de point light
     attenuation = { constant: 1, linear: 0.09, quadratic: 0.032 };
@@ -66,6 +69,9 @@ export class SpotLight implements LightInstance {
     radius: number = 150;
     enabled: boolean = true;
     castShadows: boolean = true;
+    // Layer targeting (name and resolved mask) - normalized via LightRegistry
+    layer: string = '';
+    layerMask: number = 0;
 
     // Propiedades específicas de spotlight
     direction: Vector2D = { x: 1, y: 0 };
@@ -135,6 +141,9 @@ export class AnimatedLight implements LightInstance {
     radius: number = 100;
     enabled: boolean = true;
     castShadows: boolean = true;
+    // Layer targeting (name and resolved mask) - normalized via LightRegistry
+    layer: string = '';
+    layerMask: number = 0;
 
     // Propiedades de animación
     baseIntensity: number = 1;
@@ -225,6 +234,9 @@ export class DirectionalLight implements LightInstance {
     radius: number = 0; // No aplicable
     enabled: boolean = true;
     castShadows: boolean = true;
+    // Layer targeting (name and resolved mask) - normalized via LightRegistry
+    layer: string = '';
+    layerMask: number = 0;
 
     // Propiedades específicas
     direction: Vector2D = { x: 0, y: 1 }; // Hacia abajo por defecto
@@ -529,14 +541,21 @@ export class LightingEffects {
 
 // ===== EJEMPLO COMPLETO DE INTEGRACIÓN =====
 
+import { Scene } from '@/core/Scene';
+
 export class GameLightingManager {
     private lightingSystem: LightingSystem;
     private lightingEffects: LightingEffects;
     private isEnabled: boolean = true;
 
-    constructor() {
+    constructor(scene?: Scene) {
         this.lightingSystem = new LightingSystem(lightRegistry);
         this.lightingEffects = new LightingEffects();
+
+        // If a scene is provided, register it so LightRegistry can resolve layer names
+        if (scene) {
+            this.lightingSystem.setScene(scene);
+        }
 
         this.setupDefaultConfiguration();
     }

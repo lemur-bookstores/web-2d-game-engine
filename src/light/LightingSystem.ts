@@ -1,6 +1,7 @@
 import { Entity } from "@/ecs";
 import { LightComponent, LightEntry, LightInstance } from "./LightComponent";
 import { LightRegistry } from "./LightRegistry";
+import { Scene } from "@/core/Scene";
 
 export class LightingSystem {
     private lightRegistry: LightRegistry;
@@ -102,6 +103,9 @@ export class LightingSystem {
     render(context: CanvasRenderingContext2D, entities: any[], camera?: any): void {
         if (!this.lightingCanvas || !this.lightingContext) return;
 
+        // small read to keep shadowsEnabled in use until shadows are implemented
+        if (!this.shadowsEnabled) { /* shadows disabled - no-op for now */ }
+
         const { width, height } = context.canvas;
 
         // Ajustar tamaño del canvas de iluminación
@@ -152,16 +156,57 @@ export class LightingSystem {
             const lightComponent = entity.getComponent('light') as LightComponent;
             if (!lightComponent) continue;
 
-            this.renderEntityLights(lightComponent, camera);
+            this.renderEntityLights(lightComponent, entity, camera);
         }
     }
 
     /**
      * Renderiza las luces de una entidad específica
      */
-    private renderEntityLights(lightComponent: LightComponent, camera?: any): void {
+    private renderEntityLights(lightComponent: LightComponent, entity: any, camera?: any): void {
         const renderLightEntry = (entry: any) => {
             if (!entry?.instance || !entry.instance.enabled) return;
+
+            // Layer/mask matching: if the light targets specific layer(s), skip if entity layer doesn't match
+            try {
+                const entityLayer = typeof entity.getLayer === 'function' ? entity.getLayer() : undefined;
+
+                // light target can be provided on the instance or saved state
+                const lightTarget = entry.instance.layer ?? entry.state?.layer ?? entry.instance.layerMask ?? entry.state?.layerMask;
+
+                if (lightTarget !== undefined && entityLayer !== undefined) {
+                    const entityIsNumber = typeof entityLayer === 'number';
+                    const targetIsNumber = typeof lightTarget === 'number';
+
+                    if (entityIsNumber && targetIsNumber) {
+                        // bitmask test: if (entityLayer & lightMask) === 0 -> skip
+                        if ((entityLayer & (lightTarget as number)) === 0) return;
+                    } else if (!entityIsNumber && !targetIsNumber) {
+                        // string compare
+                        if (String(entityLayer) !== String(lightTarget)) return;
+                    } else {
+                        // mixed types: try numeric coercion
+                        const el = Number(entityLayer as any);
+                        const lt = Number(lightTarget as any);
+                        if (!Number.isNaN(el) && !Number.isNaN(lt)) {
+                            if ((el & lt) === 0) return;
+                        }
+                    }
+                }
+            } catch (_) {
+                // ignore layer checks on error
+            }
+
+            // Culling: skip lights outside camera view if we can compute bounds
+            try {
+                const camBounds = this.getCameraBounds(camera, this.lightingCanvas!);
+                const lightBounds = entry.instance.getBounds ? entry.instance.getBounds() : this.getLightBoundsFromInstance(entry.instance);
+                if (camBounds && lightBounds && !this.rectsIntersect(camBounds, lightBounds)) {
+                    return; // offscreen
+                }
+            } catch (_) {
+                // if bounds computation fails, fallback to rendering
+            }
 
             // Usar método de renderizado personalizado si existe
             if (entry.instance.render) {
@@ -183,6 +228,48 @@ export class LightingSystem {
                 renderLightEntry(lightEntry);
             }
         }
+    }
+
+    /**
+     * Intenta obtener bounds de la cámara en coordenadas de mundo/screen.
+     * Soporta varios formatos de cámara: getViewBounds(), viewport, x/y/width/height
+     */
+    private getCameraBounds(camera: any, canvas: HTMLCanvasElement): { x: number, y: number, width: number, height: number } | null {
+        if (!camera) {
+            // if no camera provided, assume full canvas
+            return { x: 0, y: 0, width: canvas.width, height: canvas.height };
+        }
+
+        // Preferred API: camera.getViewBounds() -> { x,y,width,height }
+        if (typeof camera.getViewBounds === 'function') {
+            try { return camera.getViewBounds(); } catch (_) { }
+        }
+
+        // viewport in screen coords
+        if (camera.viewport && typeof camera.viewport === 'object') {
+            const v = camera.viewport;
+            if (typeof v.x === 'number' && typeof v.y === 'number' && typeof v.width === 'number' && typeof v.height === 'number') {
+                return { x: v.x, y: v.y, width: v.width, height: v.height };
+            }
+        }
+
+        // simple camera with x/y/width/height
+        if (typeof camera.x === 'number' && typeof camera.y === 'number' && typeof camera.width === 'number' && typeof camera.height === 'number') {
+            return { x: camera.x, y: camera.y, width: camera.width, height: camera.height };
+        }
+
+        // fallback: full canvas
+        return { x: 0, y: 0, width: canvas.width, height: canvas.height };
+    }
+
+    private getLightBoundsFromInstance(instance: any): { x: number, y: number, width: number, height: number } | null {
+        if (!instance || !instance.position) return null;
+        const r = instance.radius ?? instance.range ?? 100;
+        return { x: instance.position.x - r, y: instance.position.y - r, width: r * 2, height: r * 2 };
+    }
+
+    private rectsIntersect(a: { x: number, y: number, width: number, height: number }, b: { x: number, y: number, width: number, height: number }): boolean {
+        return !(b.x > a.x + a.width || b.x + b.width < a.x || b.y > a.y + a.height || b.y + b.height < a.y);
     }
 
     /**
@@ -292,6 +379,15 @@ export class LightingSystem {
 
     setBlendMode(mode: GlobalCompositeOperation): void {
         this.blendMode = mode;
+    }
+
+    /**
+     * Registra la escena actual para que el LightRegistry pueda resolver
+     * nombres de layer a bitmasks cuando se normalizan objetivos de layer.
+     */
+    setScene(scene: Scene): void {
+        if (!scene) return;
+        this.lightRegistry.setLayerResolver(name => scene.getLayer(name)?.bit);
     }
 }
 
