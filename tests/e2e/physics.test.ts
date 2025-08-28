@@ -4,13 +4,6 @@ import { System } from '../../src/ecs/System';
 import { World } from '../../src/ecs/World';
 import { TransformComponent } from '../../src/ecs/Component';
 
-interface ColliderComponent {
-    type: 'collider';
-    width: number;
-    height: number;
-    solid: boolean;
-}
-
 interface VelocityComponent {
     type: 'velocity';
     x: number;

@@ -26,7 +26,7 @@ class RenderSystem extends System {
         }
     }
 
-    update(entities: Entity[], deltaTime: number): void {
+    update(entities: Entity[], _deltaTime: number): void {
         if (!this.gl || !this.isGLMocked) return;
 
         const renderableEntities = this.getEntitiesWithComponents(entities, this.requiredComponents);

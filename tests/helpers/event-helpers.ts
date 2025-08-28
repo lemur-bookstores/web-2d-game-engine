@@ -14,7 +14,7 @@ const eventProto = {
     stopPropagation: vi.fn(),
     stopImmediatePropagation: vi.fn(),
     composedPath: () => [],
-    initEvent: (type: string) => { }
+    initEvent: (_type: string) => { }
 };
 
 export function createKeyboardEvent(type: string, options: ExtendedKeyboardEventInit = {}): KeyboardEvent {
@@ -97,12 +97,7 @@ export function createTouch(options: any): Touch {
     };
 }
 
-interface ExtendedTouchEventInit {
-    target?: EventTarget;
-    touches?: Touch[];
-    targetTouches?: Touch[];
-    changedTouches?: Touch[];
-}
+
 
 export function createTouchEvent(type: string, touches: Touch[] = []): TouchEvent {
     const event = Object.create(eventProto);
