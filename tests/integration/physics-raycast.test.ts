@@ -4,7 +4,6 @@ import { PhysicsBody, PhysicsBodyType, PhysicsShape } from '../../src/physics/Ph
 import { PhysicsWorld } from '../../src/physics/PhysicsWorld';
 
 
-
 describe('Raycast Integration Tests', () => {
     let world: PhysicsWorld;
     let staticBody: PhysicsBody;

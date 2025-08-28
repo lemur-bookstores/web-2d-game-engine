@@ -21,10 +21,11 @@ test('integration: AnimationSystem advances frames and AudioSystem plays mapped 
     const animSys = new AnimationSystem();
     animSys.registerSpriteSheet('mock', sheet);
     const audioSys = new AudioSystem();
+    if (audioSys) { }
 
     // Spy AudioManager.play
     const am = AudioManager.getInstance();
-    const playSpy = vi.spyOn(am, 'play').mockImplementation((name: string) => ({ id: 'mock' } as any));
+    const playSpy = vi.spyOn(am, 'play').mockImplementation((_name: string) => ({ id: 'mock' } as any));
 
     // Entity with animation that maps local frame index 2 -> 'boom'
     const entity = new Entity('e1');

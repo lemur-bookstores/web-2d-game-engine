@@ -125,6 +125,7 @@ describe('animation with sprite-sheet library integration', () => {
         // Get initial UV values
         const initialUvX = spriteComponent.uvX;
         const initialUvY = spriteComponent.uvY;
+        if (initialUvX && initialUvY) { }
 
         // Update animation system (should update sprite UVs based on current frame)
         animationSystem.update([entity], 0.01); // Small delta time
