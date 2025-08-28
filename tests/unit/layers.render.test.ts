@@ -4,13 +4,6 @@ import { RenderSystem } from '../../src/graphics/RenderSystem';
 import { Canvas2DRenderer } from '../../src/graphics/Canvas2DRenderer';
 import { Entity } from '../../src/ecs/Entity';
 
-// Mock a texture that can be drawn without real images
-class MockTexture {
-    width = 16;
-    height = 16;
-    getImage() { return { complete: true, width: 16, height: 16, src: '' }; }
-}
-
 // Use a minimal sprite component
 const spriteComponent = {
     type: 'sprite', texture: 'mock', width: 16, height: 16, tint: { r: 255, g: 255, b: 255, a: 255 }
