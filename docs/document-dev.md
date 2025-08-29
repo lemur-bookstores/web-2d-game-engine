@@ -31,7 +31,7 @@ _Por: Arquitecto de Software_
 ### **2. Estructura del Proyecto MVP**
 
 ```
-web-2d-game-engine/
+atomic-game-engine2d/
 ├── src/
 │   ├── core/
 │   │   ├── Engine.ts              # Motor principal
