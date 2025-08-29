@@ -1,6 +1,34 @@
 import { Texture } from './Texture';
 import { v4 as uuidv4 } from 'uuid';
 
+// Atlas JSON types used by fromAtlas / toAtlas helpers
+export interface AtlasFrameEntry {
+    id?: string;
+    frame: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+    };
+}
+
+export interface AtlasAnimationEntry {
+    frames: Array<number | string>;
+    duration?: number;
+    loop?: boolean;
+    pingPong?: boolean;
+}
+
+export interface AtlasData {
+    frames: AtlasFrameEntry[];
+    animations?: Record<string, AtlasAnimationEntry>;
+}
+
+export interface AtlasExport {
+    frames: Array<{ id?: string; frame: { x: number; y: number; w: number; h: number } }>;
+    animations?: Record<string, { frames: string[]; duration: number; loop: boolean; pingPong: boolean }>;
+}
+
 export interface SpriteFrame {
     id?: string;
     x: number;
@@ -136,15 +164,16 @@ export class SpriteSheet {
         return true;
     }
 
-    static fromAtlas(texture: Texture, atlasData: any): SpriteSheet {
+    static fromAtlas(texture: Texture, atlasData: AtlasData): SpriteSheet {
         // Creamos un SpriteSheet con dimensiones mínimas para inicializar
         const spriteSheet = new SpriteSheet(texture, 1, 1);
         spriteSheet.frames = []; // Limpiamos los frames generados por el constructor
 
         // Cargamos los frames desde el atlas JSON
         atlasData.frames.forEach((frameData: any) => {
+            // Preserve frame id if provided by the atlas, otherwise generate one
             spriteSheet.frames.push({
-                id: uuidv4(),
+                id: frameData.id || uuidv4(),
                 x: frameData.frame.x,
                 y: frameData.frame.y,
                 width: frameData.frame.w,
@@ -154,11 +183,22 @@ export class SpriteSheet {
 
         // Cargamos las animaciones si existen
         if (atlasData.animations) {
-            Object.keys(atlasData.animations).forEach((animName) => {
-                const animData = atlasData.animations[animName];
+            const animations = atlasData.animations;
+            Object.keys(animations).forEach((animName) => {
+                const animData = animations[animName];
+                // Animations in atlas may reference frames by index or by id (string).
+                // Normalize to indices: if a frame reference is a string, look up its index by id.
+                const frames: number[] = (animData.frames || []).map((f: any) => {
+                    if (typeof f === 'string') {
+                        const idx = spriteSheet.frames.findIndex(fr => fr.id === f);
+                        return idx >= 0 ? idx : -1;
+                    }
+                    return typeof f === 'number' ? f : -1;
+                }).filter((n: number) => n >= 0);
+
                 spriteSheet.addAnimation(animName, {
                     name: animName,
-                    frames: animData.frames,
+                    frames,
                     duration: animData.duration || 0.1,
                     loop: animData.loop !== false,
                     pingPong: animData.pingPong || false,
@@ -185,6 +225,41 @@ export class SpriteSheet {
         }));
 
         return spriteSheet;
+    }
+
+    /**
+     * Find a frame by its id. Returns the index or -1 if not found.
+     */
+    findFrameById(id: string): number {
+        return this.frames.findIndex(f => f.id === id);
+    }
+
+    /**
+     * Export an atlas-like object preserving frame ids and referencing animations by frame id.
+     */
+    toAtlas(): AtlasExport {
+        const outFrames = this.frames.map(f => ({
+            id: f.id,
+            frame: { x: f.x, y: f.y, w: f.width, h: f.height }
+        }));
+
+        const outAnimations: Record<string, any> = {};
+        this.animations.forEach((anim, name) => {
+            // Map frame indices to frame ids
+            const frameIds = (anim.frames || []).map(fi => {
+                const frame = this.getFrame(fi);
+                return frame?.id;
+            }).filter(Boolean) as string[];
+
+            outAnimations[name] = {
+                frames: frameIds,
+                duration: anim.duration,
+                loop: anim.loop,
+                pingPong: anim.pingPong,
+            };
+        });
+
+        return { frames: outFrames, animations: outAnimations };
     }
 
     dispose(): void {
