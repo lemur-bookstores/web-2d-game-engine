@@ -85,11 +85,21 @@ export class ParticleSystem extends System {
         p.y = y;
         p.vx = Math.cos(angle) * speed;
         p.vy = Math.sin(angle) * speed;
-    p.life = comp.lifetime;
-    p.size = comp.size;
-    p.color = comp.color;
-    p.texture = comp.texture;
+        p.life = comp.lifetime;
+        p.size = comp.size;
+        p.color = comp.color;
+        p.texture = comp.texture;
         p.gravityY = comp.gravity?.y ?? 0;
+        // Normalize and store layer information on the particle for renderer filtering
+        try {
+            const norm = ParticleRegistry.getInstance().normalizeLayerTarget((comp as any).layer ?? (comp as any).layerMask);
+            p.layer = norm.layer;
+            p.layerMask = norm.layerMask ?? 0;
+        } catch (e) {
+            p.layer = undefined;
+            p.layerMask = 0;
+        }
+        p.visible = comp.visible !== false;
         this.particles.push(p);
     }
 
@@ -100,7 +110,16 @@ export class ParticleSystem extends System {
 
     // Provide read-only snapshot for renderer
     getParticlesForRender() {
-        // return shallow copies (x,y,size,color)
-        return this.particles.map(p => ({ x: p.x, y: p.y, size: p.size, color: p.color, texture: p.texture }));
+        // return shallow copies including layer info (x,y,size,color,texture,layer,layerMask,visible)
+        return this.particles.map(p => ({
+            x: p.x,
+            y: p.y,
+            size: p.size,
+            color: p.color,
+            texture: p.texture,
+            layer: p.layer,
+            layerMask: p.layerMask,
+            visible: p.visible !== false,
+        }));
     }
 }

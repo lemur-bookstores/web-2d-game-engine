@@ -167,22 +167,81 @@ export class RenderSystem extends System {
         // Render particles if a particle system is attached
         if (this.particleSystem && typeof this.particleSystem.getParticlesForRender === 'function') {
             const parts = this.particleSystem.getParticlesForRender();
-            for (const p of parts) {
-                // Prefer texture-based particles
-                if ((this.renderer as any).drawSprite && p.texture) {
-                    const tex = this.textures.get(p.texture);
+
+            // Filter by visibility and layer order if present
+            let visibleParts = parts.filter((p: any) => p && (p.visible === undefined || p.visible));
+            if (this.layerOrder && this.layerOrder.length > 0) {
+                const layerOrder = this.layerOrder;
+                visibleParts = visibleParts.filter((p: any) => {
+                    if (p.layer === undefined && (p.layerMask === undefined || p.layerMask === 0)) return true;
+                    // If particle has a named layer, ensure that layer exists and is visible
+                    if (typeof p.layer === 'string') {
+                        const layerDef = layerOrder.find(l => l.name === p.layer);
+                        return layerDef ? (layerDef.visible !== false) : true;
+                    }
+                    // If particle has a bitmask, check any matching visible layer
+                    if (typeof p.layerMask === 'number' && p.layerMask !== 0) {
+                        for (const l of layerOrder) {
+                            if (l.visible === false) continue;
+                            if ((l.bit & p.layerMask) !== 0) return true;
+                        }
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            // Camera frustum culling: if camera available, skip particles outside viewport plus margin
+            if (this.camera) {
+                const margin = 32;
+                const cam = this.camera;
+                visibleParts = visibleParts.filter((p: any) => {
+                    const worldPos = new Vector2(p.x, p.y);
+                    const screenPos = cam.worldToScreen(worldPos);
+                    const sx = screenPos.x;
+                    const sy = screenPos.y;
+                    if (sx + p.size < -margin || sx - p.size > cam.viewport.width + margin) return false;
+                    if (sy + p.size < -margin || sy - p.size > cam.viewport.height + margin) return false;
+                    return true;
+                });
+            }
+
+            // Group by texture for batching if renderer supports a batch API
+            const groupByTexture = new Map<string | null, any[]>();
+            for (const p of visibleParts) {
+                const key = p.texture || null;
+                const arr = groupByTexture.get(key) || [];
+                arr.push(p);
+                groupByTexture.set(key, arr);
+            }
+
+            for (const [texKey, group] of groupByTexture) {
+                if (texKey && (this.renderer as any).drawSpriteBatch) {
+                    const tex = this.textures.get(texKey as string);
                     if (tex) {
-                        (this.renderer as any).drawSprite(tex, { x: p.x, y: p.y }, { x: p.size, y: p.size }, 0, p.color);
-                        continue;
+                        try {
+                            // convert group to batch-friendly format
+                            const batchItems = group.map((p: any) => ({ x: p.x, y: p.y, size: p.size, color: p.color }));
+                            (this.renderer as any).drawSpriteBatch(tex, batchItems);
+                            continue;
+                        } catch (e) {
+                            // fallback to per-particle draws
+                        }
                     }
                 }
 
-                // Fallback to drawCircle if supported
-                if ((this.renderer as any).drawCircle) {
-                    try {
-                        (this.renderer as any).drawCircle(p.x, p.y, p.size, p.color);
-                    } catch (e) {
-                        // ignore drawing failures in test env
+                // Per-particle rendering fallback
+                for (const p of group) {
+                    if ((this.renderer as any).drawSprite && p.texture) {
+                        const tex = this.textures.get(p.texture);
+                        if (tex) {
+                            (this.renderer as any).drawSprite(tex, { x: p.x, y: p.y }, { x: p.size, y: p.size }, 0, p.color);
+                            continue;
+                        }
+                    }
+
+                    if ((this.renderer as any).drawCircle) {
+                        try { (this.renderer as any).drawCircle(p.x, p.y, p.size, p.color); } catch (e) { }
                     }
                 }
             }
