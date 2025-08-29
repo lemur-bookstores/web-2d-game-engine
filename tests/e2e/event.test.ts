@@ -3,7 +3,7 @@ import { Entity } from '../../src/ecs/Entity';
 import { System } from '../../src/ecs/System';
 import { World } from '../../src/ecs/World';
 import { EventSystem } from '../../src/core/EventSystem';
-import { TEST_EVENTS } from '../../src/types/event-const';
+import { TEST_EVENTS, WORLD_EVENTS } from '../../src/types/event-const';
 
 describe('Event System Tests', () => {
     let eventSystem: EventSystem;
@@ -80,7 +80,8 @@ describe('Event System Tests', () => {
         const world = new World();
         let entityCreatedReceived = false;
 
-        eventSystem.on(TEST_EVENTS.TESTFOUR, () => {
+        // World emits WORLD_EVENTS.ENTITY_CREATED when an entity is created
+        eventSystem.on(WORLD_EVENTS.ENTITY_CREATED, () => {
             entityCreatedReceived = true;
         });
 
