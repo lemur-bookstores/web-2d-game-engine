@@ -4,6 +4,8 @@ export class ParticleRegistry {
     private static instance: ParticleRegistry;
     private layerResolver?: LayerResolver;
     private typeMappers: Array<{ typeName: string; predicate: (v: any) => boolean; normalize: (v: any) => any }> = [];
+    private particleTypes = new Map<string, any>();
+    private metadata = new Map<string, any>();
 
     private constructor() { }
 
@@ -36,6 +38,43 @@ export class ParticleRegistry {
 
     setLayerResolver(resolver: LayerResolver | undefined) {
         this.layerResolver = resolver;
+    }
+
+    registerParticleType(typeName: string, ctor: any, opts?: { description?: string }) {
+        this.particleTypes.set(typeName, ctor);
+        try {
+            const inst = new ctor();
+            const props: any[] = [];
+            for (const key of Object.keys(inst)) {
+                if (typeof (inst as any)[key] !== 'function' && !key.startsWith('_')) {
+                    const normalized = this.normalizeValue((inst as any)[key]);
+                    props.push({ name: key, type: normalized.type, initialValue: normalized.value });
+                }
+            }
+            this.metadata.set(typeName, { typeName, description: opts?.description || '', properties: props });
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    getRegisteredParticleTypes(): string[] {
+        return Array.from(this.particleTypes.keys());
+    }
+
+    getParticleMetadata(typeName: string): any | undefined {
+        return this.metadata.get(typeName);
+    }
+
+    createDefaultParticle(typeName: string): any | null {
+        const ctor = this.particleTypes.get(typeName);
+        if (!ctor) return null;
+        const inst = new ctor();
+        // normalize fields
+        for (const key of Object.keys(inst)) {
+            const norm = this.normalizeValue((inst as any)[key]);
+            (inst as any)[key] = norm.value;
+        }
+        return inst;
     }
 
     registerTypeMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any) {
