@@ -1,5 +1,5 @@
 {
-  "name": "web-2d-game-engine",
+  "name": "atomic-game-engine2d",
   "version": "0.5.1",
   "description": "A lightweight 2D game engine for web browsers with ECS architecture",
   "main": "dist/gameengine.umd.js",
