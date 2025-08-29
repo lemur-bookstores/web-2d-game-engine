@@ -96,4 +96,10 @@ export class ParticleSystem extends System {
     getParticleCount() {
         return this.particles.length;
     }
+
+    // Provide read-only snapshot for renderer
+    getParticlesForRender() {
+        // return shallow copies (x,y,size,color)
+        return this.particles.map(p => ({ x: p.x, y: p.y, size: p.size, color: p.color, texture: p.texture }));
+    }
 }

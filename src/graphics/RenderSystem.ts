@@ -21,6 +21,8 @@ export class RenderSystem extends System {
     private _backgroundColor: Color = new Color(0, 0, 0, 255);
     private camera: Camera2D | null = null;
     private layerOrder: Array<{ name: string; bit: number; mask?: number; visible?: boolean; opacity?: number }> | null = null;
+    // optional particle system to render after sprites
+    private particleSystem: any | null = null;
     // renderer metadata/mappers
     private rendererMappers: Array<{
         typeName: string;
@@ -55,6 +57,10 @@ export class RenderSystem extends System {
     constructor(renderer: RenderStrategy) {
         super();
         this.renderer = renderer;
+    }
+
+    setParticleSystem(ps: any | null) {
+        this.particleSystem = ps;
     }
 
     setRenderer(renderer: RenderStrategy): void {
@@ -157,6 +163,30 @@ export class RenderSystem extends System {
 
         // Present the rendered frame
         this.renderer.present();
+
+        // Render particles if a particle system is attached
+        if (this.particleSystem && typeof this.particleSystem.getParticlesForRender === 'function') {
+            const parts = this.particleSystem.getParticlesForRender();
+            for (const p of parts) {
+                // Prefer texture-based particles
+                if ((this.renderer as any).drawSprite && p.texture) {
+                    const tex = this.textures.get(p.texture);
+                    if (tex) {
+                        (this.renderer as any).drawSprite(tex, { x: p.x, y: p.y }, { x: p.size, y: p.size }, 0, p.color);
+                        continue;
+                    }
+                }
+
+                // Fallback to drawCircle if supported
+                if ((this.renderer as any).drawCircle) {
+                    try {
+                        (this.renderer as any).drawCircle(p.x, p.y, p.size, p.color);
+                    } catch (e) {
+                        // ignore drawing failures in test env
+                    }
+                }
+            }
+        }
     }
 
     setCamera(camera: Camera2D | null): void {
