@@ -1,7 +1,6 @@
 import { GameLoop, System } from './GameLoop';
 import { EventSystem } from './EventSystem';
 import { Scene, CollisionLayer } from './Scene';
-import { EngineConfig } from '../types';
 import { RenderSystem } from '../graphics/RenderSystem';
 import { Camera2D } from '../graphics/Camera2D';
 import { Canvas2DRenderer } from '../graphics/Canvas2DRenderer';
@@ -83,6 +82,11 @@ export class Engine {
                 }
             }
 
+            // Propagate active scene to systems that accept it (e.g., LightingSystem)
+            // Do this unconditionally so systems receive the scene even if no RenderSystem
+            // was created during initialization.
+            this.propagateSceneToSystems(this.activeScene);
+
             this.initialized = true;
             this.eventSystem.emit(ENGINE_EVENTS.INITIALIZED);
 
@@ -145,6 +149,10 @@ export class Engine {
         this.gameLoop.addSystem(system);
         this.eventSystem.emit(ENGINE_EVENTS.SYSTEM_ADDED, { system });
         this.debugLog('System added:', system.constructor.name);
+        // If we have an active scene, propagate to the newly added system when possible
+        if (this.activeScene && typeof (system as any).setScene === 'function') {
+            try { (system as any).setScene(this.activeScene); } catch (_) { }
+        }
     }
 
     /**
@@ -247,7 +255,22 @@ export class Engine {
                 this.renderSystem.setLayerOrder(this.defaultLayers);
             }
         }
+
+        // Propagate scene to any systems that can accept it (lighting, etc)
+        this.propagateSceneToSystems(this.activeScene);
     }
+    /**
+     * Propagate the active scene to systems that expose a `setScene(scene)` method.
+     * This allows systems like `LightingSystem` to resolve layer names -> bitmasks.
+     */
+    private propagateSceneToSystems(scene: Scene | null): void {
+        for (const sys of this.gameLoop.getSystems()) {
+            if (sys && typeof (sys as any).setScene === 'function') {
+                try { (sys as any).setScene(scene as any); } catch (_) { }
+            }
+        }
+    }
+
 
     /**
      * Create a new Camera2D instance and set it as active camera

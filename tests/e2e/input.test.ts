@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createKeyboardEvent, createMouseEvent, createTouch, createTouchEvent } from '../helpers/event-helpers'; import { INPUT_EVENTS } from '@/types/event-const';
 import { EventSystem } from '../../src/core/EventSystem';
 import { InputManager } from '../../src/input';
-import { createKeyboardEvent, createMouseEvent, createWheelEvent, createTouch, createTouchEvent } from '../helpers/event-helpers';
-import { Vector2 } from '../../src';
 
 describe('Input System Tests', () => {
     let inputManager: InputManager;
@@ -35,9 +34,11 @@ describe('Input System Tests', () => {
     describe('Keyboard Input', () => {
         it('should detect key press and release', () => {
             let keyPressed = false;
-            eventSystem.on('keyDown', (event) => {
-                const data = event.data as KeyboardEvent;
-                if (data.code === 'Space') keyPressed = true;
+            eventSystem.on(INPUT_EVENTS.KEYDOWN, (event) => {
+                // Support both shapes: direct KeyboardEvent in event.data, or wrapped { event: KeyboardEvent }
+                const raw = (event as any).data;
+                const data = raw?.event ?? raw ?? (event as any);
+                if (data && (data as any).code === 'Space') keyPressed = true;
             });
 
             // Simulate keyboard event
@@ -95,7 +96,7 @@ describe('Input System Tests', () => {
             inputManager['wheelDelta'] = 100;
 
             // Emitir el evento manualmente
-            eventSystem.emit('mouseWheel', { deltaY: 100 });
+            eventSystem.emit(INPUT_EVENTS.MOUSEWHEEL, { deltaY: 100 });
 
             // Verificar que el valor se ha establecido correctamente
             expect(inputManager['wheelDelta']).toBe(100);
@@ -106,7 +107,7 @@ describe('Input System Tests', () => {
         it('should handle touch events', () => {
             // Crear un flag para rastrear si el evento fue disparado
             let touchStarted = false;
-            eventSystem.on('touchStart', () => {
+            eventSystem.on(INPUT_EVENTS.TOUCHSTART, () => {
                 touchStarted = true;
             });
 
@@ -122,7 +123,7 @@ describe('Input System Tests', () => {
             inputManager['touches'].set(0, touchData as any);
 
             // Emitir el evento manualmente
-            eventSystem.emit('touchStart', {
+            eventSystem.emit(INPUT_EVENTS.TOUCHSTART, {
                 event: {
                     touches: [touchData],
                     changedTouches: [touchData]

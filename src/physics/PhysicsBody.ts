@@ -1,4 +1,4 @@
-import { Body } from 'box2d-wasm';
+import type { Body } from 'box2d-wasm';
 import { Vector2 } from '../math/Vector2';
 import { Transform } from '../math/Transform';
 import { PhysicsWorld } from './PhysicsWorld';
@@ -29,6 +29,18 @@ export interface PhysicsBodyConfig {
     // collision filtering
     collisionCategory?: number; // categoryBits
     collisionMask?: number; // maskBits
+}
+
+// UserData wrapper para Box2D-wasm
+const bodyUserData = new WeakMap<Body, any>();
+
+// Extensiones seguras
+export function setBodyUserData(body: Body, data: any) {
+    bodyUserData.set(body, data);
+}
+
+export function getBodyUserData(body: Body): any {
+    return bodyUserData.get(body);
 }
 
 export class PhysicsBody {
@@ -62,6 +74,38 @@ export class PhysicsBody {
         this.world.registerBody(this);
     }
 
+    /**
+     * Returns metadata description for PhysicsBody config fields (for inspector/editor).
+     */
+    static getMetadata(): Array<{ name: string; type: string; default?: any; description?: string }> {
+        return [
+            { name: 'type', type: 'PhysicsBodyType', default: PhysicsBodyType.Dynamic, description: 'Body type (static/dynamic/kinematic)' },
+            { name: 'shape', type: 'PhysicsShape', default: PhysicsShape.Box, description: 'Collision shape' },
+            { name: 'width', type: 'number', default: 1 },
+            { name: 'height', type: 'number', default: 1 },
+            { name: 'radius', type: 'number', default: 0.5 },
+            { name: 'density', type: 'number', default: 1 },
+            { name: 'friction', type: 'number', default: 0.2 },
+            { name: 'restitution', type: 'number', default: 0.2 },
+            { name: 'isSensor', type: 'boolean', default: false },
+            { name: 'position', type: 'Vector2', default: { x: 0, y: 0 } },
+            { name: 'angle', type: 'number', default: 0 },
+            { name: 'collisionCategory', type: 'number', default: 0x0001 },
+            { name: 'collisionMask', type: 'number', default: 0xFFFF }
+        ];
+    }
+
+    /**
+     * Returns a normalized summary of the body's config using PhysicsWorld mappers.
+     */
+    public getConfigSummary(): any {
+        try {
+            return this.world.normalizePhysicsData('physicsBody', this.config);
+        } catch (_) {
+            return { shape: this.config.shape, width: this.config.width, height: this.config.height, radius: this.config.radius };
+        }
+    }
+
     private initialize(): void {
         const box2d = this.world.getBox2D();
         const w = this.world.getWorld();
@@ -90,7 +134,7 @@ export class PhysicsBody {
         bodyDef.angle = this.config.angle!;
 
         this.body = w.CreateBody(bodyDef);
-        this.body.SetUserData(this);
+        setBodyUserData(this.body, this);
 
         const fixtureDef = new box2d.b2FixtureDef();
         fixtureDef.density = this.config.density!;

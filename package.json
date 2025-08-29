@@ -1,6 +1,6 @@
 {
-  "name": "web-2d-game-engine",
-  "version": "0.5.1",
+  "name": "atomic-game-engine2d",
+  "version": "0.6.0",
   "description": "A lightweight 2D game engine for web browsers with ECS architecture",
   "main": "dist/gameengine.umd.js",
   "module": "dist/gameengine.es.js",
@@ -31,7 +31,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lemur-bookstores/web-2d-game-engine.git"
+    "url": "https://github.com/lemur-bookstores/atomic-game-engine2d.git"
   },
   "devDependencies": {
     "@types/jsdom": "21.1.7",

@@ -3,6 +3,7 @@ import { GameEngine } from '../../src/index';
 import { EventSystem } from '../../src/core/EventSystem';
 import { Scene } from '../../src/core/Scene';
 import { System } from '../../src/core/GameLoop';
+import { ENGINE_EVENTS, GAMELOOP_EVENTS } from '@/types/event-const';
 
 describe('Game Engine Tests', () => {
     let engine: GameEngine;
@@ -46,7 +47,7 @@ describe('Game Engine Tests', () => {
             const eventSystem = EventSystem.getInstance();
             let initReceived = false;
 
-            eventSystem.on('engine:initialized', () => {
+            eventSystem.on(ENGINE_EVENTS.INITIALIZED, () => {
                 initReceived = true;
             });
 
@@ -77,7 +78,7 @@ describe('Game Engine Tests', () => {
 
             let sceneChangedData: any = null;
             const eventSystem = EventSystem.getInstance();
-            eventSystem.on('engine:activeSceneChanged', (data) => {
+            eventSystem.on(ENGINE_EVENTS.ACTIVE_SCENE_CHANGE, (data) => {
                 sceneChangedData = data;
             });
 
@@ -107,8 +108,8 @@ describe('Game Engine Tests', () => {
             let stopped = false;
             const eventSystem = EventSystem.getInstance();
 
-            eventSystem.on('engine:started', () => started = true);
-            eventSystem.on('engine:stopped', () => stopped = true);
+            eventSystem.on(ENGINE_EVENTS.STARTED, () => started = true);
+            eventSystem.on(ENGINE_EVENTS.STOPPED, () => stopped = true);
 
             engine.start();
             expect(started).toBe(true);
@@ -122,7 +123,7 @@ describe('Game Engine Tests', () => {
 
             let updateCount = 0;
             const testSystem: System = {
-                update: (entities: any[], deltaTime: number) => {
+                update: (_entities: any[], _deltaTime: number) => {
                     updateCount++;
                 }
             };
@@ -140,11 +141,11 @@ describe('Game Engine Tests', () => {
 
     describe('Error Handling', () => {
         it('should handle initialization errors gracefully', async () => {
-            let errorReceived = false;
-            const eventSystem = EventSystem.getInstance();
-            eventSystem.on('engine:initializationError', () => {
-                errorReceived = true;
-            });
+            // let errorReceived = false;
+            // const eventSystem = EventSystem.getInstance();
+            // eventSystem.on(ENGINE_EVENTS.INITIALIZATION_ERROR, () => {
+            //     errorReceived = true;
+            // });
 
             // Test should throw on constructor, not on initialize
             expect(() => {
@@ -175,7 +176,7 @@ describe('Game Engine Tests', () => {
             // Engine should continue running
             const eventSystem = EventSystem.getInstance();
             let updateReceived = false;
-            eventSystem.on('gameloop:fixedUpdate', () => {
+            eventSystem.on(GAMELOOP_EVENTS.FIXED_UPDATE, () => {
                 updateReceived = true;
             });
 

@@ -1,4 +1,14 @@
 // Objetos constantes para fácil acceso (opcional pero recomendado)
+export const TEST_EVENTS: TestEvents = {
+    TESTONE: 'TEST:ONE',
+    TESTTWO: 'TEST:TWO',
+    TESTTHREE: 'TEST:THREE',
+    TESTFOUR: 'TEST:FOUR',
+    TESTFIVE: 'TEST:FIVE',
+    TESTSIX: 'TEST:SIX',
+    TESTSEVEN: 'TEST:SEVEN'
+} as const;
+
 export const WORLD_EVENTS: WorldEvents = {
     ENTITY_CREATED: 'WORLD:ENTITY_CREATED',
     ENTITY_DESTROYED: 'WORLD:ENTITY_DESTROYED',

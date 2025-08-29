@@ -4,16 +4,14 @@ import { PhysicsBody, PhysicsBodyType, PhysicsShape } from '../../src/physics/Ph
 import { PhysicsWorld } from '../../src/physics/PhysicsWorld';
 
 
-
 describe('Raycast Integration Tests', () => {
     let world: PhysicsWorld;
-    let staticBody: PhysicsBody;
 
     beforeEach(async () => {
         world = await PhysicsWorld.getInstance();
 
-        // Create a static body to raycast against
-        staticBody = new PhysicsBody(world, {
+        // Create a static body to raycast against (registered with world for fallback)
+        new PhysicsBody(world, {
             type: PhysicsBodyType.Static,
             shape: PhysicsShape.Box,
             width: 2,

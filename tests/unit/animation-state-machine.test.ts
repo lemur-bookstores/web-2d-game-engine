@@ -63,6 +63,8 @@ test('StateMachine trigger transition', () => {
     const system = new AnimationStateMachineSystem();
     const es = EventSystem.getInstance();
 
+    if (es) { }
+
     const def = {
         states: [
             { name: 'idle', animation: 'idle' },

@@ -77,7 +77,7 @@ Un motor de juegos 2D ligero y modular para navegadores web, construido con Type
 ## 📦 Instalación
 
 ```bash
-npm install web-2d-game-engine
+npm install atomic-game-engine2d
 ```
 
 ## 🎯 Guía de Inicio Rápido
@@ -102,13 +102,13 @@ Primero, necesitas un canvas en tu HTML:
 ### 2. Crear tu Primer Juego
 
 ```typescript
-import { GameEngine } from "web-2d-game-engine";
-import { Scene } from "web-2d-game-engine/core/Scene";
-import { Entity } from "web-2d-game-engine/ecs/Entity";
-import { EventSystem } from "web-2d-game-engine/core/EventSystem";
-import { RenderSystem } from "web-2d-game-engine/graphics";
-import { InputManager, InputSystem } from "web-2d-game-engine/input";
-import { INPUT_EVENTS } from "web-2d-game-engine/types/event-const";
+import { GameEngine } from "atomic-game-engine2d";
+import { Scene } from "atomic-game-engine2d/core/Scene";
+import { Entity } from "atomic-game-engine2d/ecs/Entity";
+import { EventSystem } from "atomic-game-engine2d/core/EventSystem";
+import { RenderSystem } from "atomic-game-engine2d/graphics";
+import { InputManager, InputSystem } from "atomic-game-engine2d/input";
+import { INPUT_EVENTS } from "atomic-game-engine2d/types/event-const";
 
 class MiJuego {
   private engine: GameEngine;
@@ -270,7 +270,7 @@ Notas:
 #### Cargar Texturas
 
 ```typescript
-import { AssetManager } from "web-2d-game-engine/assets/AssetManager";
+import { AssetManager } from "atomic-game-engine2d/assets/AssetManager";
 
 // En tu función initialize()
 const assetManager = AssetManager.getInstance();
@@ -339,10 +339,10 @@ Juego de memoria que demuestra:
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/lemur-bookstores/web-2d-game-engine.git
+git clone https://github.com/lemur-bookstores/atomic-game-engine2d.git
 
 # Instalar dependencias
-cd web-2d-game-engine
+cd atomic-game-engine2d
 npm install
 
 # Construir el proyecto
@@ -385,23 +385,33 @@ npm run lint
 
 ## 📚 Documentación
 
-### Arquitectura del Motor
+### Documentación y Guías
 
-El motor está basado en **ECS (Entity-Component-System)**:
+La documentación detallada del motor ahora está organizada por componente y sistema en la carpeta `docs/`. Cada entrada incluye una descripción y ejemplos de uso en TypeScript.
 
-- **Entidades**: Objetos del juego (jugador, enemigos, proyectiles)
-- **Componentes**: Datos que definen propiedades (posición, sprite, colisión)
-- **Sistemas**: Lógica que procesa componentes (renderizado, física, input)
+Principales documentos:
 
-### Componentes Disponibles
+- `docs/ecs.md` — Arquitectura ECS: Entidades, Componentes y Sistemas.
+- `docs/scene.md` — Gestión de escenas y ciclo de vida.
+- `docs/entity.md` — API de `Entity` y manipulación de componentes.
+- `docs/transform.md` — Componente `transform` y transformaciones.
+- `docs/sprite.md` — Componente `sprite` y AssetManager usage.
+- `docs/physics.md` — `PhysicsSystem`, Box2D fallback y configuración.
+- `docs/collider.md` — Colisionadores y detección de colisiones.
+- `docs/render-system.md` — Render system, batching y cámaras.
+- `docs/input-system.md` — InputManager e InputSystem (keyboard/mouse/touch).
+- `docs/event-system.md` — EventSystem y patrón de eventos.
+- `docs/asset-manager.md` — Carga y uso de texturas y assets.
+- `docs/particle-system.md` — Particle system, emitters y serialization.
+- `docs/light-system.md` — Light system and layer resolver.
+- `docs/script-component.md` — ScriptComponent y ScriptSystem.
+- `docs/animation-system.md` — AnimationSystem and SpriteSheet usage.
 
-| Componente  | Descripción                 | Propiedades                          |
-| ----------- | --------------------------- | ------------------------------------ |
-| `transform` | Posición, rotación y escala | `position`, `rotation`, `scale`      |
-| `sprite`    | Imagen/textura              | `texture`, `width`, `height`, `tint` |
-| `rectangle` | Forma rectangular           | `width`, `height`, `color`           |
-| `physics`   | Propiedades físicas         | `velocity`, `acceleration`, `mass`   |
-| `collider`  | Detección de colisiones     | `width`, `height`, `isTrigger`       |
+Revisa `docs/` para ejemplos de código y casos de uso concretos.
+| `sprite` | Imagen/textura | `texture`, `width`, `height`, `tint` |
+| `rectangle` | Forma rectangular | `width`, `height`, `color` |
+| `physics` | Propiedades físicas | `velocity`, `acceleration`, `mass` |
+| `collider` | Detección de colisiones | `width`, `height`, `isTrigger` |
 
 ### Sistemas del Motor
 
