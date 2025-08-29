@@ -72,6 +72,11 @@ export class ParticleSystem extends System {
         this.emitters.push({ entityId: entity.id, component, accumulator: 0 });
     }
 
+    attachEmitterFromSerialized(entity: Entity, serialized: any) {
+        const comp = ParticleRegistry.getInstance().deserializeEmitter(serialized) as ParticleComponent;
+        this.attachEmitter(entity, comp);
+    }
+
     private spawnParticle(x: number, y: number, comp: ParticleComponent) {
         const p = this.pool.pop() || {};
         const angle = (Math.random() - 0.5) * comp.spread;

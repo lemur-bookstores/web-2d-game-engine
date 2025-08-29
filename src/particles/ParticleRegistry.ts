@@ -77,6 +77,23 @@ export class ParticleRegistry {
         return inst;
     }
 
+    // Simple serializer for an emitter component (POJO safe)
+    serializeEmitter(component: any): any {
+        // shallow clone primitives/objects
+        const out: any = {};
+        for (const k of Object.keys(component)) {
+            const v = (component as any)[k];
+            if (v === null || typeof v !== 'object') out[k] = v;
+            else out[k] = JSON.parse(JSON.stringify(v));
+        }
+        return out;
+    }
+
+    deserializeEmitter(data: any): any {
+        // basic passthrough; in future map types
+        return JSON.parse(JSON.stringify(data));
+    }
+
     registerTypeMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any) {
         this.typeMappers.push({ typeName, predicate, normalize });
     }
