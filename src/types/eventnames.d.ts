@@ -7,11 +7,22 @@ declare enum EventNames {
     GAMELOOP = 'GAMELOOP:',
     PHYSICS = 'PHYSICS:',
     ASSET = 'ASSET:',
-    ANIMATION = 'ANIMATION:'
+    ANIMATION = 'ANIMATION:',
+    TEST = 'TEST:'
 }
 
 // Utility type para crear eventos tipados
 declare type CreateEventType<T extends EventNames, K extends string> = `${T}${K}`;
+
+declare type TestEvents = {
+    TESTONE: CreateEventType<EventNames.TEST, 'ONE'>,
+    TESTTWO: CreateEventType<EventNames.TEST, 'TWO'>,
+    TESTTHREE: CreateEventType<EventNames.TEST, 'THREE'>,
+    TESTFOUR: CreateEventType<EventNames.TEST, 'FOUR'>,
+    TESTFIVE: CreateEventType<EventNames.TEST, 'FIVE'>,
+    TESTSIX: CreateEventType<EventNames.TEST, 'SIX'>,
+    TESTSEVEN: CreateEventType<EventNames.TEST, 'SEVEN'>
+};
 
 // Definición de eventos por categoría
 declare type AssetEvents = {
@@ -118,6 +129,7 @@ declare type AnimationEvents = {
 
 // Union type de todos los eventos disponibles
 declare type AllEventTypes =
+    | TestEvents[keyof TestEvents]
     | WorldEvents[keyof WorldEvents]
     | SceneEvents[keyof SceneEvents]
     | InputEvents[keyof InputEvents]

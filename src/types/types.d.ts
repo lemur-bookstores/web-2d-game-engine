@@ -1,14 +1,29 @@
+/// <reference types="vite/client" />
+
+declare module "*.wasm?url" {
+    const src: string;
+    export default src;
+}
+
 /**
  * Type definitions for the GameEngine 2D
  */
-export interface Position {
+
+interface PropertyMetadata {
+    name: string;
+    initialValue: any;
+    type: string;
+    isReadOnly?: boolean;
+    validator?: (value: any) => boolean;
+    description?: string;
+}
+
+interface Vector2D {
     x: number;
     y: number;
 }
 
-export interface Scale extends Position { }
-
-export interface EngineConfig {
+interface EngineConfig {
     canvas: string | HTMLCanvasElement;
     width: number;
     height: number;
@@ -19,39 +34,39 @@ export interface EngineConfig {
     debug?: boolean;
 }
 
-export interface GameEvent<T = any> {
+interface GameEvent<T = any> {
     type: AllEventTypes;
     data: T;
     timestamp: number;
 }
 
-export type EventCallback<T> = (event: GameEvent<T>) => void;
+type EventCallback<T> = (event: GameEvent<T>) => void;
 
-export interface Color {
+interface Color {
     r: number;
     g: number;
     b: number;
     a: number;
 }
 
-export interface Rectangle {
+interface Rectangle {
     x: number;
     y: number;
     width: number;
     height: number;
 }
 
-export interface TransformData {
-    position: Position;
+interface TransformData {
+    position: Vector2D;
     rotation: number;
-    scale: Scale;
+    scale: Vector2D;
 }
 
-export type SystemUpdateFunction = <T>(entities: T[], deltaTime: number) => void;
-export type ComponentType = string;
-export type EntityId = string;
+type SystemUpdateFunction = <T>(entities: T[], deltaTime: number) => void;
+type ComponentType = string;
+type EntityId = string;
 
-export interface AudioComponent {
+interface AudioComponent {
     type: 'audio';
     clip: string; // key in AssetManager or path
     loop?: boolean;

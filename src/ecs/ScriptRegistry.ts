@@ -1,36 +1,25 @@
 import { ScriptInstance, ScriptState } from './ScriptComponent';
 
-export interface PropertyMetadata {
-    name: string;
-    initialValue: any;
-    type: string;
-    // ✨ NUEVO: Metadatos adicionales
-    isReadOnly?: boolean;
-    validator?: (value: any) => boolean;
-    description?: string;
-}
-
 export interface ScriptMetadata {
     className: string;
     constructor: ScriptConstructor;
     properties: PropertyMetadata[];
-    // ✨ NUEVO: Metadatos de clase
     version?: string;
     description?: string;
 }
 
 export type ScriptConstructor = new (...args: any[]) => ScriptInstance;
 
-// ✨ NUEVO: Interface para type mappers más robusta
+// Interface para type mappers más robusta
 export interface TypeMapper {
     typeName: string;
     predicate: (value: any) => boolean;
     normalize: (value: any) => any;
-    // ✨ NUEVO: Validador opcional
+    // Validador opcional
     validator?: (value: any) => boolean;
-    // ✨ NUEVO: Deserializador para restaurar desde JSON
+    // Deserializador para restaurar desde JSON
     deserialize?: (serialized: any) => any;
-    // ✨ NUEVO: Prioridad para ordenar mappers
+    // Prioridad para ordenar mappers
     priority?: number;
 }
 
@@ -112,7 +101,7 @@ export class ScriptRegistry {
 
         this.typeMappers.push(fullMapper);
 
-        // ✨ NUEVO: Ordenar por prioridad (mayor prioridad primero)
+        // Ordenar por prioridad (mayor prioridad primero)
         this.typeMappers.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
         // Limpiar cache al agregar nuevos mappers

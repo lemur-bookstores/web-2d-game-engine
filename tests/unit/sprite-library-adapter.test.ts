@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertNormalizedToPixelFrames, createImageDataFromCanvas } from '../../src/libs/sprite-sheet/engine-adapter';
+import { convertNormalizedToPixelFrames } from '../../src/libs/sprite-sheet/engine-adapter';
 import { SpriteFrame } from '../../src/libs/sprite-sheet';
 import { SpriteSheet } from '../../src/graphics/SpriteSheet';
 import { Texture } from '../../src/graphics/Texture';

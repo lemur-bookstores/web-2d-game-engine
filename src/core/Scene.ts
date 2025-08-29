@@ -1,5 +1,4 @@
 import { EventSystem } from './EventSystem';
-import { EntityId } from '../types';
 import { Entity } from '@/ecs';
 import { SCENE_EVENTS } from '@/types/event-const';
 

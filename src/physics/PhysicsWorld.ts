@@ -1,10 +1,15 @@
-import { Box2DFactory, Box2D, World, Vec2 } from 'box2d-wasm';
+import * as Box2DFactory from "box2d-wasm";
+import type { Box2D, World, Vec2 } from "box2d-wasm";
+import wasmUrl from "box2d-wasm/dist/umd/Box2D.simd.wasm?url";
+
 import { Vector2 } from '../math/Vector2';
 import { EventSystem } from '../core/EventSystem';
-import { PhysicsBody } from './PhysicsBody';
+import { getBodyUserData, PhysicsBody } from './PhysicsBody';
 import { PHYSICS_EVENTS } from '@/types/event-const';
 import { RaycastOptions, RaycastResult } from './Raycast';
 
+
+export type Box2DModule = Awaited<ReturnType<typeof Box2DFactory>>;
 
 export type PhysicsCollisionEvent = {
     bodyA: PhysicsBody;
@@ -14,9 +19,40 @@ export type PhysicsCollisionEvent = {
     impulse: number;
 };
 
+let _box2dFactory: (() => Promise<any>) | null = null;
+
+async function LoadBox2DFactory(): Promise<(() => Promise<any>) | null> {
+    if (_box2dFactory !== null) return _box2dFactory;
+
+    try {
+        const mod: any = await import("box2d-wasm");
+
+        const candidate =
+            mod.Box2DFactory ??
+            mod.default?.Box2DFactory ??
+            mod.default ??
+            mod;
+
+        if (typeof candidate === "function") {
+            _box2dFactory = (options?: any) => candidate({
+                ...options,
+                locateFile: (file: string) =>
+                    file.endsWith(".wasm") ? wasmUrl : file,
+            });
+            return _box2dFactory;
+        }
+
+        console.warn("PhysicsWorld: box2d-wasm export shape not recognized, fallback.");
+        return null;
+    } catch (err) {
+        console.warn("PhysicsWorld: dynamic import of box2d-wasm failed -> fallback mode.", err);
+        return null;
+    }
+}
+
 export class PhysicsWorld {
     private static instance: PhysicsWorld;
-    private box2D: Box2D | undefined;
+    private box2D: Box2DModule | undefined;
     private world: World | undefined;
     private joints: Set<any> = new Set();
     private bodies: Set<PhysicsBody> = new Set(); // Track bodies for fallback mode
@@ -30,6 +66,43 @@ export class PhysicsWorld {
     private constructor() {
         this.gravity = new Vector2(0, 9.81);
         this.eventSystem = EventSystem.getInstance();
+        this.registerBuiltInPhysicsMappers();
+    }
+
+    // Physics type mappers / metadata
+    private physicsTypeMappers: Array<{
+        typeName: string;
+        predicate: (v: any) => boolean;
+        normalize: (v: any) => any;
+        description?: string;
+    }> = [];
+
+    registerPhysicsMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any, description?: string): void {
+        this.physicsTypeMappers.push({ typeName, predicate, normalize, description });
+    }
+
+    getRegisteredPhysicsTypes(): string[] {
+        return Array.from(new Set(this.physicsTypeMappers.map(m => m.typeName)));
+    }
+
+    getPhysicsMetadata(typeName: string): { type: string; description?: string } | undefined {
+        const m = this.physicsTypeMappers.find(x => x.typeName === typeName);
+        if (!m) return undefined;
+        return { type: m.typeName, description: m.description };
+    }
+
+    normalizePhysicsData(typeName: string, data: any): any {
+        for (const m of this.physicsTypeMappers) {
+            if (m.typeName === typeName || m.predicate(data)) {
+                try { return m.normalize(data); } catch (_) { return data; }
+            }
+        }
+        return data;
+    }
+
+    private registerBuiltInPhysicsMappers(): void {
+        // Physics body config summary
+        this.registerPhysicsMapper('physicsBody', (v: any) => v && (v.width !== undefined || v.radius !== undefined || v.shape !== undefined), (v: any) => ({ shape: v.shape || (v.radius ? 'circle' : 'box'), width: v.width ?? null, height: v.height ?? null, radius: v.radius ?? null }), 'Physics body config');
     }
 
     public static async getInstance(): Promise<PhysicsWorld> {
@@ -40,20 +113,27 @@ export class PhysicsWorld {
         return PhysicsWorld.instance;
     }
 
+
     private async initialize(): Promise<void> {
         try {
-            const factory: any = Box2DFactory as any;
+            const factory = await LoadBox2DFactory();
+            if (!factory) {
+                this.box2D = undefined;
+                this.world = undefined;
+                return;
+            }
+
             this.box2D = await factory();
-            // If factory resolved to a module-like object.
-            if (!this.box2D || !(this.box2D as any).b2World) {
-                console.warn('PhysicsWorld: Box2D module shape unexpected, running in fallback mode');
+            if (!this.box2D?.b2World) {
+                console.warn("PhysicsWorld: Box2D module shape unexpected, running in fallback mode");
                 this.box2D = undefined;
                 return;
             }
-            this.world = new this.box2D.b2World(this.toB2Vec2(this.gravity));
+
+            this.world = new this.box2D.b2World(new this.box2D.b2Vec2(this.gravity.x, this.gravity.y)) as any;
             this.setupContactListener();
         } catch (err) {
-            console.warn('PhysicsWorld: Failed to initialize Box2D (WASM missing?) -> fallback mode.', err);
+            console.warn("PhysicsWorld: Failed to initialize Box2D -> fallback mode.", err);
             this.box2D = undefined;
             this.world = undefined;
         }
@@ -111,11 +191,15 @@ export class PhysicsWorld {
     }
 
     public getBox2D(): Box2D | undefined {
-        return this.box2D;
+        return this.box2D as unknown as Box2D;
     }
 
     public getWorld(): World | undefined {
         return this.world;
+    }
+
+    private getUserData(contact: any) {
+        return getBodyUserData(contact.GetFixtureA().GetBody());
     }
 
     private setupContactListener(): void {
@@ -123,8 +207,8 @@ export class PhysicsWorld {
         const contactListener = new this.box2D.JSContactListener();
 
         contactListener.BeginContact = (contact: any) => {
-            const bodyA = contact.GetFixtureA().GetBody().GetUserData();
-            const bodyB = contact.GetFixtureB().GetBody().GetUserData();
+            const bodyA = this.getUserData(contact.GetFixtureA().GetBody());
+            const bodyB = this.getUserData(contact.GetFixtureB().GetBody());
             const worldManifold = contact.GetWorldManifold();
             const point = this.fromB2Vec2(worldManifold.points[0]);
             const normal = this.fromB2Vec2(worldManifold.normal);
@@ -139,8 +223,8 @@ export class PhysicsWorld {
         };
 
         contactListener.EndContact = (contact: any) => {
-            const bodyA = contact.GetFixtureA().GetBody().GetUserData();
-            const bodyB = contact.GetFixtureB().GetBody().GetUserData();
+            const bodyA = this.getUserData(contact.GetFixtureA().GetBody());
+            const bodyB = this.getUserData(contact.GetFixtureB().GetBody());
 
             this.eventSystem.emit(PHYSICS_EVENTS.COLLISION_END, {
                 bodyA,
@@ -153,8 +237,8 @@ export class PhysicsWorld {
         };
 
         contactListener.PostSolve = (contact: any, impulse: any) => {
-            const bodyA = contact.GetFixtureA().GetBody().GetUserData();
-            const bodyB = contact.GetFixtureB().GetBody().GetUserData();
+            const bodyA = this.getUserData(contact.GetFixtureA().GetBody());
+            const bodyB = this.getUserData(contact.GetFixtureB().GetBody());
             const worldManifold = contact.GetWorldManifold();
             const point = this.fromB2Vec2(worldManifold.points[0]);
             const normal = this.fromB2Vec2(worldManifold.normal);
@@ -242,7 +326,7 @@ export class PhysicsWorld {
 
         const callback = (fixture: any): boolean => {
             const body = fixture.GetBody();
-            const userData = body.GetUserData();
+            const userData = getBodyUserData(body);
             if (userData instanceof PhysicsBody) {
                 bodies.push(userData);
             }
@@ -287,7 +371,7 @@ export class PhysicsWorld {
             // Box2D raycast callback
             const callback = (fixture: any, point: any, normal: any, fraction: number): number => {
                 const body = fixture.GetBody();
-                const userData = body.GetUserData();
+                const userData = getBodyUserData(body);
 
                 // Check layer mask if specified
                 if (options?.layerMask !== undefined) {

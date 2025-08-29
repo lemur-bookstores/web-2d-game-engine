@@ -4,8 +4,8 @@ import { scriptRegistry } from '../../src/ecs/ScriptRegistry';
 import { ScriptSystem } from '../../src/ecs/ScriptSystem';
 import { createScriptComponent } from '../../src/ecs/ScriptComponent';
 
-class FirstScript { init() { }; update(dt: number) { }; destroy() { } }
-class SecondScript { init() { }; update(dt: number) { }; destroy() { } }
+class FirstScript { init() { }; update(_dt: number) { }; destroy() { } }
+class SecondScript { init() { }; update(_dt: number) { }; destroy() { } }
 
 describe('ScriptSystem multiple and error handling', () => {
     it('supports multiple scripts on the same entity via scripts array', () => {
@@ -25,7 +25,7 @@ describe('ScriptSystem multiple and error handling', () => {
     });
 
     it('handles errors thrown by script init/update gracefully', () => {
-        class BadScript { init() { throw new Error('boom'); } update(dt: number) { throw new Error('boom update'); } }
+        class BadScript { init() { throw new Error('boom'); } update(_dt: number) { throw new Error('boom update'); } }
         scriptRegistry.register('bad', BadScript as any);
 
         const e = new Entity('bad');

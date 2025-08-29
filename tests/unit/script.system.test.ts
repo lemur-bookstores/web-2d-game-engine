@@ -12,7 +12,7 @@ class TestScript {
     public entity: any;
     constructor(entity?: any) { this.entity = entity; }
     init() { this.initialized = true; }
-    update(dt: number) { this.updates += 1; }
+    update(_dt: number) { this.updates += 1; }
     toJSON() { return { updates: this.updates }; }
     fromJSON(data: any) { if (data?.updates) this.updates = data.updates; }
 }

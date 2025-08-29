@@ -13,9 +13,10 @@ test('AudioSystem plays audio on animation FRAME when configured', () => {
 
     // Spy on AudioManager.play
     const am = AudioManager.getInstance();
-    const playSpy = vi.spyOn(am, 'play').mockImplementation((name: string) => ({ id: 'mock' } as any));
+    const playSpy = vi.spyOn(am, 'play').mockImplementation((_name: string) => ({ id: 'mock' } as any));
 
     const audioSystem = new AudioSystem();
+    if (audioSystem) { }
 
     const entity = new Entity('e1');
     entity.addComponent({ type: 'audio', clip: 'sfx_ping', autoplayOnFrame: true, triggerFrame: 2 });
