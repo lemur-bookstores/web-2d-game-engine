@@ -3,16 +3,58 @@ export type LayerResolver = (name: string) => number | undefined;
 export class ParticleRegistry {
     private static instance: ParticleRegistry;
     private layerResolver?: LayerResolver;
+    private typeMappers: Array<{ typeName: string; predicate: (v: any) => boolean; normalize: (v: any) => any }> = [];
 
     private constructor() { }
 
+    private registerBuiltInTypeMappers() {
+        // vector2d
+        this.registerTypeMapper('vector2d',
+            (v) => v && typeof v.x === 'number' && typeof v.y === 'number',
+            (v) => ({ x: Number(v.x || 0), y: Number(v.y || 0) })
+        );
+
+        // color
+        this.registerTypeMapper('color',
+            (v) => v && typeof v.r === 'number' && typeof v.g === 'number' && typeof v.b === 'number',
+            (v) => ({
+                r: Math.max(0, Math.min(255, Number(v.r || 255))),
+                g: Math.max(0, Math.min(255, Number(v.g || 255))),
+                b: Math.max(0, Math.min(255, Number(v.b || 255))),
+                a: typeof v.a === 'number' ? Math.max(0, Math.min(1, Number(v.a))) : 1
+            })
+        );
+    }
+
     static getInstance(): ParticleRegistry {
-        if (!ParticleRegistry.instance) ParticleRegistry.instance = new ParticleRegistry();
+        if (!ParticleRegistry.instance) {
+            ParticleRegistry.instance = new ParticleRegistry();
+            ParticleRegistry.instance.registerBuiltInTypeMappers();
+        }
         return ParticleRegistry.instance;
     }
 
     setLayerResolver(resolver: LayerResolver | undefined) {
         this.layerResolver = resolver;
+    }
+
+    registerTypeMapper(typeName: string, predicate: (v: any) => boolean, normalize: (v: any) => any) {
+        this.typeMappers.push({ typeName, predicate, normalize });
+    }
+
+    getRegisteredTypeNames(): string[] {
+        return this.typeMappers.map(m => m.typeName);
+    }
+
+    normalizeValue(v: any): { type: string; value: any } {
+        for (const m of this.typeMappers) {
+            try {
+                if (m.predicate(v)) return { type: m.typeName, value: m.normalize(v) };
+            } catch (err) {
+                // ignore
+            }
+        }
+        return { type: typeof v, value: v };
     }
 
     normalizeLayerTarget(target: any): { layer?: string; layerMask?: number } {
