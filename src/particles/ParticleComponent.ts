@@ -10,6 +10,7 @@ export interface ParticleComponent {
     layer?: string | number;
     layerMask?: number;
     visible?: boolean;
+    texture?: string;
 }
 
 export const createDefaultParticleComponent = (): ParticleComponent => ({
@@ -24,4 +25,5 @@ export const createDefaultParticleComponent = (): ParticleComponent => ({
     layer: 'default',
     layerMask: 0,
     visible: true,
+    texture: undefined,
 });

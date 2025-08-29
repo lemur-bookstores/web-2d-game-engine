@@ -85,9 +85,10 @@ export class ParticleSystem extends System {
         p.y = y;
         p.vx = Math.cos(angle) * speed;
         p.vy = Math.sin(angle) * speed;
-        p.life = comp.lifetime;
-        p.size = comp.size;
-        p.color = comp.color;
+    p.life = comp.lifetime;
+    p.size = comp.size;
+    p.color = comp.color;
+    p.texture = comp.texture;
         p.gravityY = comp.gravity?.y ?? 0;
         this.particles.push(p);
     }
