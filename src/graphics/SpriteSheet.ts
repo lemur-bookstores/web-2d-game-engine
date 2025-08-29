@@ -74,6 +74,62 @@ export class SpriteSheet {
         return this.texture;
     }
 
+    /**
+     * Return a shallow copy of frames array for listing.
+     */
+    listFrames(): SpriteFrame[] {
+        return this.frames.slice();
+    }
+
+    /**
+     * Add a new frame to the sprite sheet and return its index.
+     */
+    addFrame(frame: SpriteFrame): number {
+        this.frames.push({
+            x: frame.x,
+            y: frame.y,
+            width: frame.width,
+            height: frame.height,
+        });
+        return this.frames.length - 1;
+    }
+
+    /**
+     * Update an existing frame. Returns true if updated, false if index invalid.
+     */
+    updateFrame(index: number, frame: SpriteFrame): boolean {
+        if (index < 0 || index >= this.frames.length) return false;
+        this.frames[index] = {
+            x: frame.x,
+            y: frame.y,
+            width: frame.width,
+            height: frame.height,
+        };
+        return true;
+    }
+
+    /**
+     * Update only the rectangle values (convenience) for an existing frame.
+     */
+    updateFrameRect(index: number, x: number, y: number, width: number, height: number): boolean {
+        if (index < 0 || index >= this.frames.length) return false;
+        const f = this.frames[index];
+        f.x = x;
+        f.y = y;
+        f.width = width;
+        f.height = height;
+        return true;
+    }
+
+    /**
+     * Remove a frame by index. Returns true if removed.
+     */
+    removeFrame(index: number): boolean {
+        if (index < 0 || index >= this.frames.length) return false;
+        this.frames.splice(index, 1);
+        return true;
+    }
+
     static fromAtlas(texture: Texture, atlasData: any): SpriteSheet {
         // Creamos un SpriteSheet con dimensiones mínimas para inicializar
         const spriteSheet = new SpriteSheet(texture, 1, 1);
